@@ -1,0 +1,91 @@
+.uploadPage {
+    padding: 20px;
+    text-align: center;
+  }
+
+  /* Header */
+  .header {
+    background-color: #f0f0f0;
+    padding: 10px 20px;
+    text-align: left;
+    margin-bottom: 20px;
+  }
+
+  /* Upload Box */
+  .uploadBox {
+    width: 400px;
+    height: 250px;
+    margin: 0 auto;
+    border: 2px dashed #666;
+    border-radius: 10px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    position: relative;
+  }
+
+  .uploadIcon {
+    width: 80px;
+    height: 80px;
+    border: 2px solid #666;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-bottom: 10px;
+    position: relative;
+  }
+
+  .uploadIcon .arrow {
+    width: 12px;
+    height: 12px;
+    border-left: 2px solid #666;
+    border-bottom: 2px solid #666;
+    transform: rotate(-45deg);
+    position: absolute;
+    top: 40%;
+    left: 40%;
+  }
+
+  .uploadBox p {
+    margin: 5px 0;
+    font-family: Arial, sans-serif;
+    font-size: 14px;
+  }
+
+  .browseButton {
+    background-color: #007bff;
+    color: white;
+    padding: 10px 20px;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+  }
+
+  .browseButton:hover {
+    background-color: #0056b3;
+  }
+
+  /* Upload List */
+  .uploadList {
+    margin-top: 20px;
+    padding: 10px;
+    background-color: #f8f9fa;
+    width: 400px;
+    margin-left: auto;
+    margin-right: auto;
+    text-align: left;
+    font-family: Arial, sans-serif;
+    font-size: 14px;
+    border-radius: 5px;
+  }
+
+  .uploadedFilesTitle {
+    font-weight: bold;
+    margin-bottom: 10px;
+  }
+
+  .noFiles {
+    color: #666;
+  }
