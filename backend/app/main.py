@@ -1,12 +1,13 @@
-from fastapi import FastAPI
+from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 import logging
 from app.config.settings import get_settings
+from api.endpoints import router as endpoints_router  # Import the router correctly
 
 # Configure logging
 logging.basicConfig(
     level=logging.INFO,
-    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
+    format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
 )
 logger = logging.getLogger(__name__)
 
@@ -14,7 +15,7 @@ logger = logging.getLogger(__name__)
 app = FastAPI(
     title=get_settings().app_name,
     description="Document Analysis Backend Service",
-    version="1.0.0"
+    version="1.0.0",
 )
 
 # Configure CORS
@@ -25,6 +26,9 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+# Include routes from other files
+app.include_router(endpoints_router, prefix="/api")  # Add a prefix for API routes
 
 @app.get("/")
 async def read_root():
