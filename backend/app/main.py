@@ -26,7 +26,12 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# Health check endpoint
-@app.get("/health")
+@app.get("/api/health-check")
 async def health_check():
-    return {"status": "healthy"}
+    logger.info("Health check endpoint called")
+    return {"status": "ok", "message": "Backend is running"}
+
+@app.get("/api/test-error")
+async def test_error():
+    logger.error("Test error endpoint called")
+    raise HTTPException(status_code=500, detail="Test error response")
