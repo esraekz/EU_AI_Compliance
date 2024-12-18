@@ -1,13 +1,13 @@
-import React from "react";
 import { useRouter } from "next/router";
+import React from "react";
 import styles from "./Dashboard.module.css";
 
 const Dashboard: React.FC = () => {
-    const router = useRouter();
+  const router = useRouter();
 
-    const navigateTo = (path: string) => {
-      router.push(path);
-    };
+  const navigateTo = (path: string) => {
+    router.push(path);
+  };
 
   return (
     <div className={styles.dashboard}>
@@ -18,36 +18,34 @@ const Dashboard: React.FC = () => {
 
       {/* Sidebar */}
       <aside className={styles.sidebar}>
-
-          <div
-            className={`${styles.navItem} ${styles.active}`}
-            onClick={() =>  navigateTo("/upload")}
-            >
-
-            <div className={styles.icon}>
-              <div className={styles.arrowUp}></div>
-            </div>
-            <span>Upload Documents</span>
+        {/* Navigation */}
+        <div
+          className={`${styles.navItem} ${styles.active}`}
+          onClick={() => navigateTo("/upload")}
+        >
+          <div className={styles.icon}>
+            <div className={styles.arrowUp}></div>
           </div>
-          <div className={styles.navItem}>
-            <div className={styles.icon}>
-              <div className={styles.box}></div>
-            </div>
-            <span>My Documents</span>
+          <span>Upload Documents</span>
+        </div>
+        <div className={styles.navItem}>
+          <div className={styles.icon}>
+            <div className={styles.box}></div>
           </div>
-          <div className={styles.navItem}>
-            <div className={styles.icon}>
-              <div className={styles.chat}></div>
-            </div>
-            <span>Chat Assistant</span>
+          <span>My Documents</span>
+        </div>
+        <div className={styles.navItem}>
+          <div className={styles.icon}>
+            <div className={styles.chat}></div>
           </div>
-          <div className={styles.navItem}>
-            <div className={styles.icon}>
-              <div className={styles.cross}></div>
-            </div>
-            <span>Extractions</span>
+          <span>Chat Assistant</span>
+        </div>
+        <div className={styles.navItem}>
+          <div className={styles.icon}>
+            <div className={styles.cross}></div>
           </div>
-        </nav>
+          <span>Extractions</span>
+        </div>
       </aside>
 
       {/* Main Content */}
