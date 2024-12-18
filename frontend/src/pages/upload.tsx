@@ -64,7 +64,7 @@ const UploadPage: React.FC = () => {
 
     try {
       setUploadStatus("Uploading...");
-      const response = await fetch("http://localhost:8000/upload", {
+      const response = await fetch("http://localhost:8000/api/upload", {
         method: "POST",
         body: formData,
       });
