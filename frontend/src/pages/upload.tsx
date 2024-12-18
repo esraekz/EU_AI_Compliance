@@ -4,6 +4,7 @@ import { useDropzone } from "react-dropzone";
 const UploadPage: React.FC = () => {
   const [uploadedFiles, setUploadedFiles] = useState<File[]>([]);
   const [errors, setErrors] = useState<string[]>([]);
+  const [uploadStatus, setUploadStatus] = useState<string>("");
 
   // Validation function for files
   const validateFile = (file: File): string | null => {
@@ -22,7 +23,7 @@ const UploadPage: React.FC = () => {
   };
 
   // Handle dropped files
-  const onDrop = (acceptedFiles: File[], rejectedFiles: File[]) => {
+  const onDrop = (acceptedFiles: File[]) => {
     const newErrors: string[] = [];
     const validFiles: File[] = [];
 
@@ -37,6 +38,11 @@ const UploadPage: React.FC = () => {
 
     setErrors([...errors, ...newErrors]);
     setUploadedFiles([...uploadedFiles, ...validFiles]);
+
+    // Automatically upload valid files
+    if (validFiles.length > 0) {
+      handleUpload(validFiles);
+    }
   };
 
   const { getRootProps, getInputProps } = useDropzone({
@@ -47,6 +53,32 @@ const UploadPage: React.FC = () => {
 
   const handleRemoveFile = (index: number) => {
     setUploadedFiles((prevFiles) => prevFiles.filter((_, i) => i !== index));
+  };
+
+  // Upload files to FastAPI
+  const handleUpload = async (files: File[]) => {
+    const formData = new FormData();
+    files.forEach((file) => {
+      formData.append("file", file); // Add each file to the form data
+    });
+
+    try {
+      setUploadStatus("Uploading...");
+      const response = await fetch("http://localhost:8000/upload", {
+        method: "POST",
+        body: formData,
+      });
+
+      if (!response.ok) {
+        const errorMessage = await response.text();
+        throw new Error(`Error: ${errorMessage}`);
+      }
+
+      const data = await response.json();
+      setUploadStatus(`Upload successful: ${data.file_path || "Files processed"}`);
+    } catch (error) {
+      setUploadStatus(`Upload failed: ${error.message}`);
+    }
   };
 
   return (
@@ -112,6 +144,12 @@ const UploadPage: React.FC = () => {
               </li>
             ))}
           </ul>
+        </div>
+      )}
+
+      {uploadStatus && (
+        <div style={{ marginTop: "20px", color: uploadStatus.startsWith("Upload failed") ? "red" : "green" }}>
+          {uploadStatus}
         </div>
       )}
     </div>
