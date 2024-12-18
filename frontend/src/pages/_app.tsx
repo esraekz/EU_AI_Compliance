@@ -1,8 +1,9 @@
 import '@/styles/globals.css';
 import { MantineProvider } from '@mantine/core';
-import type { AppProps } from 'next/app';
-import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import '@mantine/core/styles.css';
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import type { AppProps } from 'next/app';
+import Layout from '../components/Layout/Layout'; // Import the Layout component
 
 // Create a client
 const queryClient = new QueryClient({
@@ -14,21 +15,13 @@ const queryClient = new QueryClient({
   },
 });
 
-function MyApp({ Component, pageProps }: AppProps) {
-  return (
-    <QueryClientProvider client={queryClient}>
-      <MantineProvider withNormalizeCSS withGlobalStyles>
-        <Component {...pageProps} />
-      </MantineProvider>
-    </QueryClientProvider>
-  );
-}
-
 export default function App({ Component, pageProps }: AppProps) {
   return (
     <QueryClientProvider client={queryClient}>
-      <MantineProvider>
-        <Component {...pageProps} />
+      <MantineProvider withNormalizeCSS withGlobalStyles>
+        <Layout>
+          <Component {...pageProps} />
+        </Layout>
       </MantineProvider>
     </QueryClientProvider>
   );
