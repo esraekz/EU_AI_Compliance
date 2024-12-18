@@ -77,7 +77,11 @@ const UploadPage: React.FC = () => {
       const data = await response.json();
       setUploadStatus(`Upload successful: ${data.file_path || "Files processed"}`);
     } catch (error) {
-      setUploadStatus(`Upload failed: ${error.message}`);
+      if (error instanceof Error) {
+        setUploadStatus(`Upload failed: ${error.message}`);
+      } else {
+        setUploadStatus("Upload failed: An unknown error occurred.");
+      }
     }
   };
 
