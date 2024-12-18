@@ -1,5 +1,4 @@
-import React, { useState } from 'react';
-import { Alert, AlertDescription } from '@/components/ui/alert';
+import { useState } from 'react';
 
 const API_BASE_URL = 'http://localhost:8000';
 
@@ -73,9 +72,9 @@ const ConnectivityTest = () => {
       )}
 
       {error && (
-        <Alert variant="destructive">
-          <AlertDescription>{error}</AlertDescription>
-        </Alert>
+        <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded">
+          {error}
+        </div>
       )}
 
       {response && (
