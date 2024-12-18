@@ -1,4 +1,4 @@
-// src/pages/connectivity-test.tsx
+// src/pages/connectivity-test.tsx test
 import ConnectivityTest from '../components/ConnectivityTest';
 
 export default function ConnectivityTestPage() {
