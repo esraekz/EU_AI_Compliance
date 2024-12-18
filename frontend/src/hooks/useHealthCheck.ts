@@ -6,7 +6,7 @@ export const useHealthCheck = () => {
     queryFn: async () => {
       try {
         const response = await fetch(
-          `${process.env.NEXT_PUBLIC_API_URL}/health-check`
+          `${process.env.NEXT_PUBLIC_API_URL}/api/health-check`
         );
         console.log('Health check response:', response.status);
         if (!response.ok) {
