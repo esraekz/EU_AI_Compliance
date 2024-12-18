@@ -10,7 +10,7 @@ logging.basicConfig(
 )
 logger = logging.getLogger(__name__)
 
-# Initialize FastAPI app
+# Initialize FastAPI app - ttest
 app = FastAPI(
     title=get_settings().app_name,
     description="Document Analysis Backend Service",
