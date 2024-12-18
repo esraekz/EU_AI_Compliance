@@ -2,7 +2,7 @@ from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 import logging
 from app.config.settings import get_settings
-from api.endpoints import router as endpoints_router  # Import the router correctly
+from app.api.endpoints import router as endpoints_router  # Import the router correctly
 
 # Configure logging
 logging.basicConfig(
