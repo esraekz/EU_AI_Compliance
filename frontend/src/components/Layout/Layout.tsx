@@ -14,16 +14,59 @@ const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
       {/* Sidebar */}
       <aside className={styles.sidebar}>
         <div
-          className={`${styles.navItem} ${router.pathname === "/dashboard" ? styles.active : ""}`}
+          className={`${styles.navItem} ${
+            router.pathname === "/dashboard" ? styles.active : ""
+          }`}
           onClick={() => navigateTo("/dashboard")}
         >
+          <div className={styles.icon}>
+            <div className={styles.dashboardIcon}></div>
+          </div>
           <span>Dashboard</span>
         </div>
         <div
-          className={`${styles.navItem} ${router.pathname === "/upload" ? styles.active : ""}`}
+          className={`${styles.navItem} ${
+            router.pathname === "/upload" ? styles.active : ""
+          }`}
           onClick={() => navigateTo("/upload")}
         >
+          <div className={styles.icon}>
+            <div className={styles.uploadIcon}></div>
+          </div>
           <span>Upload Documents</span>
+        </div>
+        <div
+          className={`${styles.navItem} ${
+            router.pathname === "/documents" ? styles.active : ""
+          }`}
+          onClick={() => navigateTo("/documents")}
+        >
+          <div className={styles.icon}>
+            <div className={styles.documentsIcon}></div>
+          </div>
+          <span>My Documents</span>
+        </div>
+        <div
+          className={`${styles.navItem} ${
+            router.pathname === "/chat" ? styles.active : ""
+          }`}
+          onClick={() => navigateTo("/chat")}
+        >
+          <div className={styles.icon}>
+            <div className={styles.chatIcon}></div>
+          </div>
+          <span>Chat Assistant</span>
+        </div>
+        <div
+          className={`${styles.navItem} ${
+            router.pathname === "/extractions" ? styles.active : ""
+          }`}
+          onClick={() => navigateTo("/extractions")}
+        >
+          <div className={styles.icon}>
+            <div className={styles.extractionsIcon}></div>
+          </div>
+          <span>Extractions</span>
         </div>
       </aside>
 
