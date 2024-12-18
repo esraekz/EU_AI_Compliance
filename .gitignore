@@ -1,0 +1,21 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+venv/
+.env
+
+# Node
+node_modules/
+.next/
+.npm
+.env.local
+
+# VS Code
+.vscode/*
+!.vscode/settings.json
+!.vscode/extensions.json
+
+# System
+.DS_Store
+Thumbs.db
