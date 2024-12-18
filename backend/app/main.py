@@ -26,6 +26,10 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+@app.get("/")
+async def read_root():
+    return {"message": "Welcome to the API"}
+
 @app.get("/api/health-check")
 async def health_check():
     logger.info("Health check endpoint called")
