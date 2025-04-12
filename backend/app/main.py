@@ -14,7 +14,7 @@ logger = logging.getLogger(__name__)
 # Initialize FastAPI app
 app = FastAPI(
     title=get_settings().app_name,
-    description="Document Analysis Backend Service",
+    description="Zoku Backend Service",
     version="1.0.0",
 )
 
