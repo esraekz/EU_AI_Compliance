@@ -1,0 +1,76 @@
+/* Update these styles in your src/styles/invoices.module.css file */
+
+.invoicesContainer {
+    display: flex;
+    flex-direction: column;
+    width: 100%;
+  }
+
+  .tabsContainer {
+    display: flex;
+    margin-bottom: 20px;
+    border-bottom: 1px solid #e5e7eb;
+  }
+
+  .tab {
+    padding: 10px 20px;
+    font-size: 0.95rem;
+    color: #6b7280;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    position: relative;
+  }
+
+  .tab:hover {
+    color: #3b82f6;
+  }
+
+  .activeTab {
+    color: #3b82f6;
+    font-weight: 500;
+  }
+
+  .activeTab::after {
+    content: '';
+    position: absolute;
+    bottom: -1px;
+    left: 0;
+    width: 100%;
+    height: 2px;
+    background-color: #3b82f6;
+  }
+
+  .uploadButtonWrapper {
+    margin-bottom: 20px;
+  }
+
+  .uploadButton {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 10px 24px;
+    background-color: #3b82f6;
+    color: white;
+    border: none;
+    border-radius: 4px;
+    font-size: 0.95rem;
+    font-weight: 500;
+    cursor: pointer;
+    transition: background-color 0.2s ease;
+    width: auto;
+  }
+
+  .uploadButton:hover {
+    background-color: #2563eb;
+  }
+
+  .uploadIcon {
+    width: 16px;
+    height: 16px;
+    margin-right: 8px;
+  }
+
+  .content {
+    flex-grow: 1;
+    padding-top: 10px;
+  }

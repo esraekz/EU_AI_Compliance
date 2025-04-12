@@ -1,0 +1,244 @@
+/* Updated styles for src/styles/invoices.module.css */
+
+.invoicesContainer {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  width: 100%;
+  padding: 0 0 16px 0;
+  margin-bottom: 16px;
+}
+
+.tabsContainer {
+  display: flex;
+  gap: 24px;
+}
+
+.tab {
+  padding: 8px 16px;
+  font-size: 0.95rem;
+  color: #6b7280;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  position: relative;
+  border-bottom: 2px solid transparent;
+}
+
+.tab:hover {
+  color: #3b82f6;
+}
+
+.activeTab {
+  color: #3b82f6;
+  font-weight: 500;
+  border-bottom: 2px solid #3b82f6;
+}
+
+.uploadButtonWrapper {
+  display: flex;
+  align-items: center;
+}
+
+.uploadButton {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 8px 16px;
+  background-color: #3b82f6;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  font-size: 0.95rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background-color 0.2s ease;
+}
+
+.uploadButton:hover {
+  background-color: #2563eb;
+}
+
+.uploadIcon {
+  width: 16px;
+  height: 16px;
+  margin-right: 8px;
+}
+
+.content {
+  width: 100%;
+}
+
+/* Loading and Empty States */
+.loadingState {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 48px 0;
+  color: #6b7280;
+}
+
+.icon {
+  width: 48px;
+  height: 48px;
+  color: #9ca3af;
+  margin-bottom: 16px;
+}
+
+/* Upload Page Styles */
+.uploadContainer {
+  max-width: 800px;
+  margin: 0 auto;
+}
+
+.errorMessage {
+  background-color: #fee2e2;
+  color: #b91c1c;
+  padding: 12px 16px;
+  border-radius: 6px;
+  margin-bottom: 24px;
+}
+
+.dropzone {
+  border: 2px dashed #d1d5db;
+  border-radius: 8px;
+  padding: 48px 24px;
+  text-align: center;
+  transition: all 0.2s ease;
+  background-color: white;
+}
+
+.dropzone.dragging {
+  border-color: #3b82f6;
+  background-color: #eff6ff;
+}
+
+.dropzoneContent {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.uploadIcon {
+  width: 24px;
+  height: 24px;
+  color: #9ca3af;
+  margin-bottom: 16px;
+}
+
+.dropzoneText {
+  font-size: 1.1rem;
+  font-weight: 500;
+  color: #374151;
+  margin: 0 0 8px 0;
+}
+
+.dropzoneSubtext {
+  font-size: 0.9rem;
+  color: #6b7280;
+  margin: 4px 0 16px 0;
+}
+
+.browseButton {
+  display: inline-block;
+  padding: 8px 16px;
+  background-color: #f3f4f6;
+  color: #374151;
+  border-radius: 4px;
+  font-size: 0.9rem;
+  cursor: pointer;
+  margin-top: 8px;
+  transition: all 0.2s ease;
+}
+
+.browseButton:hover {
+  background-color: #e5e7eb;
+}
+
+.fileInput {
+  display: none;
+}
+
+.fileInfo {
+  margin-bottom: 16px;
+}
+
+.fileName {
+  font-size: 1rem;
+  font-weight: 500;
+  color: #374151;
+  margin: 0 0 4px 0;
+}
+
+.fileSize {
+  font-size: 0.875rem;
+  color: #6b7280;
+  margin: 0;
+}
+
+.actionButtons {
+  display: flex;
+  gap: 12px;
+  margin-top: 16px;
+}
+
+.removeButton {
+  padding: 8px 16px;
+  background-color: #fee2e2;
+  color: #b91c1c;
+  border: none;
+  border-radius: 4px;
+  font-size: 0.875rem;
+  cursor: pointer;
+  transition: background-color 0.2s ease;
+}
+
+.removeButton:hover {
+  background-color: #fecaca;
+}
+
+.uploadActionButton {
+  padding: 8px 16px;
+  background-color: #3b82f6;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  font-size: 0.875rem;
+  cursor: pointer;
+  transition: background-color 0.2s ease;
+}
+
+.uploadActionButton:hover {
+  background-color: #2563eb;
+}
+
+.uploadActionButton.loading {
+  opacity: 0.7;
+  cursor: not-allowed;
+}
+
+.acceptedFiles {
+  margin-top: 24px;
+  padding: 16px;
+  background-color: white;
+  border-radius: 8px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+}
+
+.acceptedFiles h3 {
+  font-size: 1rem;
+  font-weight: 600;
+  color: #374151;
+  margin: 0 0 12px 0;
+}
+
+.acceptedFiles ul {
+  margin: 0;
+  padding-left: 20px;
+}
+
+.acceptedFiles li {
+  font-size: 0.9rem;
+  color: #6b7280;
+  margin-bottom: 4px;
+}

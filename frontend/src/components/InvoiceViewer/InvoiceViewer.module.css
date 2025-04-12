@@ -1,0 +1,59 @@
+/* zoku/frontend/components/InvoiceViewer/InvoiceViewer.module.css */
+.container {
+    display: flex;
+    flex-direction: column;
+    width: 100%;
+    height: 100vh;
+  }
+
+  .header {
+    display: flex;
+    align-items: center;
+    margin-bottom: 16px;
+  }
+
+  .title {
+    font-size: 1.25rem;
+    font-weight: 600;
+    color: #111827;
+    margin-left: 16px;
+  }
+
+  .content {
+    display: flex;
+    flex: 1;
+    overflow: hidden;
+    gap: 16px;
+  }
+
+  .documentPanel {
+    flex: 3;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden; /* 👈 Important to contain PDF viewer */
+    min-width: 0;
+  }
+
+  .extractionPanel {
+    flex: 2;
+    max-width: 450px;
+    overflow-y: auto;
+    background-color: #fff;
+    padding: 1rem;
+    border-left: 1px solid #e5e7eb;
+  }
+
+  @media (max-width: 1024px) {
+    .content {
+      flex-direction: column;
+    }
+
+    .documentPanel, .extractionPanel {
+      width: 100%;
+      max-width: none;
+    }
+
+    .extractionPanel {
+      margin-top: 16px;
+    }
+  }

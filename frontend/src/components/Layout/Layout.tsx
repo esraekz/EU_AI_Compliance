@@ -1,3 +1,4 @@
+// src/components/Layout/Layout.tsx
 import { useRouter } from "next/router";
 import React from "react";
 import styles from "./Layout.module.css";
@@ -5,6 +6,8 @@ import styles from "./Layout.module.css";
 const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const router = useRouter();
 
+  // Check if current path is in the invoices section
+  const isInvoicesSection = router.pathname.startsWith('/invoices');
 
   const navigateTo = (path: string) => {
     // Only navigate if we're not already on this path
@@ -15,7 +18,6 @@ const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
     }
   };
 
-  
   return (
     <div className={styles.layoutContainer}>
       {/* Top Banner */}
@@ -25,7 +27,6 @@ const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
             <span className={styles.z}>Z</span><span className={styles.oku}>OKU</span>
           </div>
         </div>
-
       </header>
 
       <div className={styles.mainWrapper}>
@@ -46,11 +47,7 @@ const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
 
             <div
               className={`${styles.navItem} ${
-                router.pathname === "/invoices" ||
-                router.pathname === "/upload" ||
-                router.pathname === "/extractions"
-                  ? styles.active
-                  : ""
+                isInvoicesSection ? styles.active : ""
               }`}
               onClick={() => navigateTo("/invoices")}
             >
