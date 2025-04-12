@@ -7,26 +7,15 @@ const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
 
 
   const navigateTo = (path: string) => {
-    // Prevent navigating to the current path
-    if (router.pathname !== path) {
+    // Only navigate if we're not already on this path
+    // Use asPath to get the actual URL including query parameters
+    const currentPath = router.asPath.split('?')[0];
+    if (currentPath !== path) {
       router.push(path);
     }
   };
 
-  // Determine the page title based on the current route
-  const getPageTitle = () => {
-    switch (router.pathname) {
-      case "/home":
-        return "Home";
-      case "/invoices":
-        return "Invoices";
-      case "/invoiceassistant":
-        return "Invoice Assistant";
-      default:
-        return "Zoku";
-    }
-  };
-
+  
   return (
     <div className={styles.layoutContainer}>
       {/* Top Banner */}
@@ -36,9 +25,7 @@ const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
             <span className={styles.z}>Z</span><span className={styles.oku}>OKU</span>
           </div>
         </div>
-        <div className={styles.pageHeader}>
-          <h1 className={styles.pageTitle}>{getPageTitle()}</h1>
-        </div>
+
       </header>
 
       <div className={styles.mainWrapper}>
