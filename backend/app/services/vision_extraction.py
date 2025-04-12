@@ -18,8 +18,12 @@ UPLOAD_FOLDER = "uploaded_files"  # or wherever you save the invoices
 def extract_invoice_fields_with_ai(file_path: Optional[str] = None) -> List[ExtractionField]:
     # Default to demo-invoice.png
     if file_path is None:
-        project_root = os.path.abspath(os.path.join(os.path.dirname(__file__), "../../"))
-        file_path = os.path.join(project_root, "uploaded_files", "demo-invoice.png")
+        # project_root = os.path.abspath(os.path.join(os.path.dirname(__file__), "../../"))
+        UPLOAD_DIR = os.path.join(os.path.dirname(__file__), "..", "..", "uploaded_files")
+        file_path = os.path.abspath(os.path.join(UPLOAD_DIR, "demo-invoice.png"))
+
+
+        # file_path = os.path.join(project_root, "uploaded_files", "demo-invoice.png")
 
     if not os.path.exists(file_path):
         raise FileNotFoundError(f"No file found at {file_path}")
