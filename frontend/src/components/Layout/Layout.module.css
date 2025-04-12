@@ -76,7 +76,7 @@
 
 .slimSidebar {
   width: 70px;
-  background-color: #6030c9; /* Purple to match the Z in ZOKU */
+  background-color: #5d4cff; /* Exact purple from your screenshot */
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -104,11 +104,11 @@
 }
 
 .navItem:hover {
-  background-color: #7645d8; /* Slightly lighter purple for hover */
+  background-color: #6f61fe; /* Slightly lighter purple for hover */
 }
 
 .active {
-  background-color: #7645d8; /* Slightly lighter purple for active state */
+  background-color: #6f61fe; /* Slightly lighter purple for active state */
 }
 
 .icon {
@@ -171,29 +171,9 @@
   background-size: contain;
 }
 
-/* Profile section */
+/* Remove profile container since it's not in the screenshot */
 .profileContainer {
-  position: absolute;
-  bottom: 20px;
-  width: 100%;
-  display: flex;
-  justify-content: center;
-}
-
-.profileIcon {
-  width: 40px;
-  height: 40px;
-  border-radius: 50%;
-  overflow: hidden;
-  cursor: pointer;
-  position: relative;
-  border: 2px solid #ffffff;
-}
-
-.avatar {
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
+  display: none;
 }
 
 /* Main content */

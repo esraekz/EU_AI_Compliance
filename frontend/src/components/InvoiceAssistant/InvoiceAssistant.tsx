@@ -1,7 +1,7 @@
 import React, { useState } from "react";
-import styles from "./Chat.module.css";
+import styles from "./InvoiceAssistant.module.css";
 
-const Chat: React.FC = () => {
+const InvoiceAssistant: React.FC = () => {
   const [messages, setMessages] = useState([
     { id: 1, type: "user", text: "What information can you extract from the document?" },
     {
@@ -23,7 +23,7 @@ const Chat: React.FC = () => {
     <div className={styles.chatPage}>
       {/* Header */}
       <header className={styles.header}>
-        <h1>Chat</h1>
+        <h1>Invoice Assistant</h1>
       </header>
 
       {/* Chat Area */}
@@ -58,4 +58,4 @@ const Chat: React.FC = () => {
   );
 };
 
-export default Chat;
+export default InvoiceAssistant;
