@@ -3,7 +3,7 @@ import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/router';
 import DocumentPreview from './DocumentPreview';
 import ExtractionPanel from '../DataExtraction/ExtractionPanel';
-import { ExtractionField, Invoice, ApiResponse } from '../../types/invoice';
+import { ExtractionField, Invoice } from '../../types/invoice';
 import { invoiceApi } from '../../services/api';
 import styles from './InvoiceViewer.module.css';
 
@@ -33,6 +33,7 @@ const InvoiceViewer: React.FC<InvoiceViewerProps> = ({ invoiceId }) => {
           // Mock response for demonstration purposes
           const response = {
             success: true,
+            message: '', 
             data: {
               id: invoiceId,
               filename: 'demo-invoice.pdf',
@@ -40,7 +41,7 @@ const InvoiceViewer: React.FC<InvoiceViewerProps> = ({ invoiceId }) => {
               fileType: 'pdf',
               uploadDate: '2025-04-12',
               supplier: 'Acme Corp',
-              status: 'Processed',
+              status: 'Processed' as 'Processed' | 'Pending' | 'Failed',
               userId: 'dummy-user',
               extractedData: [
                 {

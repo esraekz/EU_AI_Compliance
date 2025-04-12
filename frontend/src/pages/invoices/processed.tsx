@@ -2,11 +2,11 @@
 import React, { useState } from 'react';
 import Head from 'next/head';
 import InvoicesLayout from '../../components/Layout/InvoicesLayout';
-import InvoiceList from '../../components/Invoices/Invoices';
-import styles from '../../styles/invoices.module.css';
+import InvoiceList from '../../components/Invoices/InvoiceList';
+
 
 const ProcessedInvoicesPage: React.FC = () => {
-  const [refreshKey, setRefreshKey] = useState<number>(0);
+  const [refreshKey] = useState<number>(0);
 
   return (
     <>

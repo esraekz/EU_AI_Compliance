@@ -1,7 +1,7 @@
 // zoku/frontend/components/Invoices/InvoiceList.tsx
 import React, { useEffect, useState } from 'react';
 import { FileText, Check, Clock, AlertTriangle } from 'lucide-react';
-import { invoiceApi } from '../../services/api';
+
 import { useRouter } from 'next/router';
 
 interface Invoice {

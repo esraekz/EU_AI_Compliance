@@ -3,10 +3,9 @@ import React, { useState } from 'react';
 import Head from 'next/head';
 import InvoicesLayout from '../../components/Layout/InvoicesLayout';
 import InvoiceList from '../../components/Invoices/InvoiceList';
-import styles from '../../styles/invoices.module.css';
 
 const UploadedInvoicesPage: React.FC = () => {
-  const [refreshKey, setRefreshKey] = useState<number>(0);
+  const [refreshKey] = useState<number>(0);
 
   return (
     <>
