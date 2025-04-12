@@ -7,6 +7,10 @@ class Settings(BaseSettings):
     azure_form_recognizer_key: str = ""
     azure_form_recognizer_endpoint: str = ""
 
+    supabase_url: str
+    supabase_key: str
+    openai_api_key: str
+    
     class Config:
         env_file = ".env"
 

@@ -91,22 +91,21 @@ const ExtractionPanel: React.FC<ExtractionPanelProps> = ({
           {showExtractedData ? "Extracted Data" : "Data Extraction"}
         </h2>
         <div>
-          {!showExtractedData && (
-            <button
-              className="flex items-center px-3 py-1.5 bg-green-600 text-white rounded text-sm"
-              onClick={handleExtract}
-              disabled={isExtracting}
+        <button
+            className="flex items-center px-3 py-1.5 bg-green-600 text-white rounded text-sm"
+            onClick={handleExtract}
+            disabled={isExtracting}
             >
-              {isExtracting ? (
+            {isExtracting ? (
                 <>Extracting...</>
-              ) : (
+            ) : (
                 <>
-                  <FileText className="w-4 h-4 mr-1" />
-                  Extract Data
+                <FileText className="w-4 h-4 mr-1" />
+                Extract Data
                 </>
-              )}
-            </button>
-          )}
+            )}
+        </button>
+
           {showExtractedData && !editingFields && (
             <div className="flex space-x-2">
               <button

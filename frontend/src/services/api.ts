@@ -3,7 +3,7 @@ import axios from 'axios';
 import { ExtractionField, Invoice, ApiResponse, InvoiceListParams } from '../types/invoice';
 
 const api = axios.create({
-  baseURL: process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000',
+  baseURL: process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000/api',
   headers: {
     'Content-Type': 'application/json',
   },
@@ -75,16 +75,19 @@ export const invoiceApi = {
   // Extract data from invoice
   extractData: async (
     invoiceId: string,
-    fields: Array<{ id: string; name: string }>
-  ): Promise<ApiResponse<ExtractionField[]>> => {
+    _fields: Array<{ id: string; name: string }>
+  ): Promise<{ success: boolean; data: ExtractionField[] }> => {
     try {
-      const response = await api.post(`/invoices/${invoiceId}/extract`, { fields });
+      const response = await api.post(`/invoices/${invoiceId}/extract-ai`, {
+        fields: _fields,
+      });
       return response.data;
     } catch (error) {
-      console.error(`Error extracting data from invoice ${invoiceId}:`, error);
+      console.error(`Error extracting with AI for invoice ${invoiceId}:`, error);
       throw error;
     }
   },
+
 
   // Export data as JSON
   exportJson: async (invoiceId: string, fields: ExtractionField[]): Promise<boolean> => {

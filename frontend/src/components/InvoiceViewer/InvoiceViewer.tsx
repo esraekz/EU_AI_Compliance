@@ -33,7 +33,7 @@ const InvoiceViewer: React.FC<InvoiceViewerProps> = ({ invoiceId }) => {
           // Mock response for demonstration purposes
           const response = {
             success: true,
-            message: '', 
+            message: '',
             data: {
               id: invoiceId,
               filename: 'demo-invoice.pdf',
@@ -107,7 +107,7 @@ const InvoiceViewer: React.FC<InvoiceViewerProps> = ({ invoiceId }) => {
         setShowExtractedData(true);
         return response.data;
       } else {
-        throw new Error(response.message || 'Extraction failed');
+        throw new Error('Extraction failed');
       }
     } catch (error) {
       console.error('Extraction failed:', error);
