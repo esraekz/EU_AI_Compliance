@@ -16,19 +16,13 @@ client = OpenAI(api_key=settings.openai_api_key)
 UPLOAD_FOLDER = "uploaded_files"  # or wherever you save the invoices
 
 def extract_invoice_fields_with_ai(file_path: Optional[str] = None) -> List[ExtractionField]:
-    # Default to demo-invoice.png
     if file_path is None:
-        # project_root = os.path.abspath(os.path.join(os.path.dirname(__file__), "../../"))
         UPLOAD_DIR = os.path.join(os.path.dirname(__file__), "..", "..", "uploaded_files")
         file_path = os.path.abspath(os.path.join(UPLOAD_DIR, "demo-invoice.png"))
 
-
-        # file_path = os.path.join(project_root, "uploaded_files", "demo-invoice.png")
-
     if not os.path.exists(file_path):
-        raise FileNotFoundError(f"No file found at {file_path}")
+        raise FileNotFoundError(f"🚫 No file found at {file_path}. Ensure it's committed and available in your deployed container.")
 
-    # Encode the image
     with open(file_path, "rb") as f:
         encoded_image = base64.b64encode(f.read()).decode("utf-8")
 
@@ -52,19 +46,13 @@ def extract_invoice_fields_with_ai(file_path: Optional[str] = None) -> List[Extr
 
     try:
         response = client.chat.completions.create(
-            model="gpt-4o",  # or updated model name
+            model="gpt-4o",
             messages=[
                 {
                     "role": "user",
                     "content": [
                         {"type": "text", "text": prompt},
-                        {
-                            "type": "image_url",
-                            "image_url": {
-                                "url": image_url,
-                                "detail": "high"
-                            }
-                        }
+                        {"type": "image_url", "image_url": {"url": image_url, "detail": "high"}}
                     ]
                 }
             ],
@@ -74,12 +62,12 @@ def extract_invoice_fields_with_ai(file_path: Optional[str] = None) -> List[Extr
         content = response.choices[0].message.content
         print("🔎 Raw content from OpenAI:\n", content)
 
-        # Strip markdown code block if present
-        cleaned = re.sub(r"```(?:json)?\n(.+?)```", r"\1", content, flags=re.DOTALL).strip()
-
-        parsed = json.loads(cleaned)
-
-        return [ExtractionField(**field) for field in parsed]
+        try:
+            cleaned = re.sub(r"```(?:json)?\n(.+?)```", r"\1", content, flags=re.DOTALL).strip()
+            return [ExtractionField(**field) for field in json.loads(cleaned)]
+        except json.JSONDecodeError:
+            print("⚠️ JSON decode failed — trying raw content directly")
+            return [ExtractionField(**field) for field in json.loads(content)]
 
     except Exception as e:
         raise RuntimeError(f"Vision API failed: {str(e)}")
