@@ -3,6 +3,9 @@ from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 import logging
 import os
+import sys
+# Add the backend directory to the path
+sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from app.routers import e_webhook as webhook
 from app.config.settings import get_settings
 from app.api.endpoints import router as endpoints_router  # Import the router correctly
