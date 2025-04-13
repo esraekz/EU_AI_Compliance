@@ -1,7 +1,9 @@
+# main.py
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 import logging
 import os
+from app.routers import webhook
 from app.config.settings import get_settings
 from app.api.endpoints import router as endpoints_router  # Import the router correctly
 
@@ -34,6 +36,7 @@ app.add_middleware(
 
 # Include routes from other files
 app.include_router(endpoints_router, prefix="/api")  # Add a prefix for API routes
+app.include_router(webhook.router, prefix="/api")
 
 @app.get("/")
 async def read_root():
