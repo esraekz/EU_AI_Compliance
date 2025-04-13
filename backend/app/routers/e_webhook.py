@@ -5,7 +5,7 @@ import logging
 from pydantic import BaseModel
 from typing import Dict, Any, Optional
 
-from app.services.document_indexer import process_invoice
+from app.services.e_document_indexer import process_invoice
 from app.auth.auth_handler import get_current_user
 
 router = APIRouter(
