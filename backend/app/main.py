@@ -3,7 +3,7 @@ from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 import logging
 import os
-from app.routers import webhook
+from app.routers import e_webhook as webhook
 from app.config.settings import get_settings
 from app.api.endpoints import router as endpoints_router  # Import the router correctly
 
