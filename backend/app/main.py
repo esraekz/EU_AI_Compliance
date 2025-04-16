@@ -6,7 +6,6 @@ import os
 import sys
 # Add the backend directory to the path
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-from app.routers import e_webhook as webhook
 from app.config.settings import get_settings
 from app.api.endpoints import router as endpoints_router  # Import the router correctly
 
@@ -39,7 +38,6 @@ app.add_middleware(
 
 # Include routes from other files
 app.include_router(endpoints_router, prefix="/api")  # Add a prefix for API routes
-app.include_router(webhook.router, prefix="/api")
 
 @app.get("/")
 async def read_root():
