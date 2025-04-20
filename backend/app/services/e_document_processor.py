@@ -99,7 +99,7 @@ async def process_document(png_path, user_id=None, document_type="invoice", skip
             result = supabase.table("zokuai_documents").insert({
                 "id": doc_id,
                 "content": extracted_text,
-                "embedding": embeddings.tolist(),  # Convert numpy array to list for JSON serialization
+                "embedding": embeddings if isinstance(embeddings, list) else embeddings.tolist(),
                 "metadata": json.dumps(metadata),
             }).execute()
 

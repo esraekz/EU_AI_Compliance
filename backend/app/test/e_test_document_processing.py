@@ -34,7 +34,7 @@ async def test_document_processing():
             png_path,
             user_id="test_user",
             document_type="invoice",
-            skip_storage=True  # Skip storage for initial testing
+            skip_storage=False  # Skip storage for initial testing
         )
 
         print(f"Status: {result['status']}")
