@@ -7,7 +7,7 @@ import uuid
 import datetime
 import numpy as np
 from app.db.supabase_client import supabase
-from app.services.openai_client import get_embeddings
+from app.services.e_openai_client import get_embeddings
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
