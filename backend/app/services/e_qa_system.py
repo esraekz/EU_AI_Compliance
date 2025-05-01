@@ -1,7 +1,7 @@
 import logging
 import json
 from app.db.supabase_client import supabase
-from app.services.openai_client import get_completion
+from app.services.e_openai_completions import get_completion
 from app.services.e_document_processor import generate_embeddings
 from app.services.e_chat_manager import store_chat_message, search_similar_questions
 
