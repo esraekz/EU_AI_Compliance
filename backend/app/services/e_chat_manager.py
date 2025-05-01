@@ -29,11 +29,12 @@ async def store_chat_message(user_id, query, response, document_ids=None):
         query_embedding = await generate_embeddings(query)
 
         # Store the chat message
+        embedding_list = query_embedding.tolist() if hasattr(query_embedding, 'tolist') else query_embedding
         result = supabase.table("zokuai_chat_history").insert({
             "id": message_id,
             "user_id": user_id,
             "query": query,
-            "query_embedding": query_embedding.tolist(),
+            "query_embedding": embedding_list,
             "response": response,
             "document_ids": json.dumps(document_ids) if document_ids else None,
             "timestamp": str(datetime.datetime.now())
@@ -85,10 +86,11 @@ async def search_similar_questions(query_text, user_id=None, limit=5):
     try:
         # Generate embeddings for the query text
         query_embedding = await generate_embeddings(query_text)
+        embedding_list = query_embedding.tolist() if hasattr(query_embedding, 'tolist') else query_embedding
 
         # Prepare the RPC call parameters
         params = {
-            "query_embedding": query_embedding.tolist(),
+            "query_embedding": embedding_list,
             "match_threshold": 0.7,  # Higher threshold for questions
             "match_count": limit
         }
@@ -108,3 +110,5 @@ async def search_similar_questions(query_text, user_id=None, limit=5):
     except Exception as e:
         logger.error(f"Error searching similar questions: {str(e)}")
         return []
+
+

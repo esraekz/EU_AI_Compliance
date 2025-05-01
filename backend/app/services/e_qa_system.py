@@ -27,10 +27,11 @@ async def retrieve_context(query, user_id=None, max_document_results=3, max_chat
         query_embedding = await generate_embeddings(query)
 
         # Search for relevant documents
+        embedding_list = query_embedding.tolist() if hasattr(query_embedding, 'tolist') else query_embedding
         doc_results = supabase.rpc(
             "zokuai_similarity_search",
             {
-                "query_embedding": query_embedding.tolist(),
+                "query_embedding": embedding_list,
                 "match_threshold": 0.5,
                 "match_count": max_document_results
             }
@@ -148,3 +149,4 @@ async def answer_question(query, user_id=None):
             "answer": "I'm sorry, but I encountered an error while processing your question. Please try again.",
             "error": str(e)
         }
+
