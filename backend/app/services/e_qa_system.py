@@ -9,13 +9,14 @@ from app.services.e_chat_manager import store_chat_message, search_similar_quest
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
-async def retrieve_context(query, user_id=None, max_document_results=3, max_chat_results=2):
+async def retrieve_context(query, user_id=None, document_ids=None, max_document_results=3, max_chat_results=2):
     """
     Retrieve relevant context for a query from both documents and chat history.
 
     Args:
         query (str): User's question
         user_id (str, optional): User ID for personalized results
+        document_ids (list, optional): List of specific document IDs to search within
         max_document_results (int): Maximum number of document contexts to retrieve
         max_chat_results (int): Maximum number of chat history items to retrieve
 
@@ -26,15 +27,22 @@ async def retrieve_context(query, user_id=None, max_document_results=3, max_chat
         # Generate embeddings for the query
         query_embedding = await generate_embeddings(query)
 
-        # Search for relevant documents
+        # Prepare search parameters
         embedding_list = query_embedding.tolist() if hasattr(query_embedding, 'tolist') else query_embedding
+        search_params = {
+            "query_embedding": embedding_list,
+            "match_threshold": 0.5,
+            "match_count": max_document_results
+        }
+
+        # Add document_ids filter if provided
+        if document_ids:
+            search_params["filter_document_ids"] = document_ids
+
+        # Search for relevant documents with potential filtering
         doc_results = supabase.rpc(
             "zokuai_similarity_search",
-            {
-                "query_embedding": embedding_list,
-                "match_threshold": 0.5,
-                "match_count": max_document_results
-            }
+            search_params
         ).execute()
 
         # Find similar previous questions if user_id is provided
@@ -59,6 +67,10 @@ async def retrieve_context(query, user_id=None, max_document_results=3, max_chat
     except Exception as e:
         logger.error(f"Error retrieving context: {str(e)}")
         return {"documents": [], "chat_history": [], "document_count": 0, "chat_count": 0}
+
+
+
+
 
 def format_context_for_llm(context):
     """
@@ -87,20 +99,21 @@ def format_context_for_llm(context):
 
     return formatted_context
 
-async def answer_question(query, user_id=None):
+async def answer_question(query, user_id=None, document_ids=None):
     """
     Answer a user's question using RAG approach.
 
     Args:
         query (str): User's question
         user_id (str, optional): User ID for personalized results
+        document_ids (list, optional): List of specific document IDs to search within
 
     Returns:
         dict: Answer and related information
     """
     try:
         # Retrieve relevant context
-        context = await retrieve_context(query, user_id)
+        context = await retrieve_context(query, user_id, document_ids)
 
         # If no context was found, generate a response without context
         if context["document_count"] == 0 and context["chat_count"] == 0:

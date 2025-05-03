@@ -39,6 +39,11 @@ app.add_middleware(
 # Include routes from other files
 app.include_router(endpoints_router, prefix="/api")  # Add a prefix for API routes
 
+# Add the QA router at the end
+from app.routers.qa_router import router as qa_router
+app.include_router(qa_router)
+
+
 @app.get("/")
 async def read_root():
     return {"message": "Welcome to the API"}
