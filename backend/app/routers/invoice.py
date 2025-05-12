@@ -1,9 +1,8 @@
-# zoku/backend/app/routers/invoice.py
 import os
 import shutil
 import tempfile
 from typing import List, Optional
-from fastapi import APIRouter, Depends, HTTPException, UploadFile, File, Form, Query, Path
+from fastapi import APIRouter, Depends, HTTPException, UploadFile, File, Form, Query, Path, BackgroundTasks
 from fastapi.responses import JSONResponse, FileResponse
 import uuid
 from datetime import datetime
@@ -31,9 +30,12 @@ from ..db.supabase_client import (
     get_file_url,
     upload_file_to_storage,
     delete_file_from_storage,
+    supabase,  # Import supabase client
 )
 from ..services.openai_client import extract_invoice_data, create_document_embedding
 from ..auth.auth_handler import get_current_user
+# Import the new function for PDF to PNG conversion
+from ..services.e_file_conversion import convert_pdf_to_png
 
 router = APIRouter(
     prefix="/invoices",
@@ -41,7 +43,7 @@ router = APIRouter(
 )
 
 # Constants
-STORAGE_BUCKET = "invoices"
+STORAGE_BUCKET = "zokuinvoices"
 ALLOWED_EXTENSIONS = {"pdf", "jpg", "jpeg", "png"}
 
 
@@ -52,9 +54,14 @@ def allowed_file(filename):
 
 @router.post("", response_model=InvoiceResponse)
 async def upload_invoice(
+    background_tasks: BackgroundTasks,  # Move this to the front
     file: UploadFile = File(...),
-    user=Depends(get_current_user)
+    user=None
 ):
+
+    if user is None:
+        user = {"id": "test-user-esra"}
+
     """
     Upload a new invoice file
     """
@@ -82,10 +89,6 @@ async def upload_invoice(
         # Upload to Supabase Storage
         with open(temp_file_path, "rb") as f:
             await upload_file_to_storage(STORAGE_BUCKET, storage_path, f)
-
-        # Clean up temp file
-        os.unlink(temp_file_path)
-
         # Get public URL
         file_url = get_file_url(STORAGE_BUCKET, storage_path)
 
@@ -95,7 +98,7 @@ async def upload_invoice(
             "filename": file.filename,
             "upload_date": datetime.now().isoformat(),
             "supplier": None,  # Will be populated after extraction
-            "status": "Pending",
+            "status": "Uploaded",  # Changed from "Pending" to "Uploaded"
             "file_url": file_url,
             "user_id": user['id'],
             "storage_path": storage_path
@@ -105,7 +108,25 @@ async def upload_invoice(
         invoice = await create_invoice(invoice_data)
 
         if not invoice:
+            # Clean up temp file
+            os.unlink(temp_file_path)
             raise HTTPException(status_code=500, detail="Failed to create invoice record")
+
+        # If it's a PDF file, add the conversion task
+        if file_ext.lower() == '.pdf':
+            # Add the background task for PDF to PNG conversion
+            background_tasks.add_task(
+                convert_pdf_to_png,
+                temp_file_path,
+                file_id,
+                storage_path,
+                user['id']
+            )
+        else:
+            # For non-PDF files (like PNGs), mark as processed right away
+            await update_invoice(file_id, {"status": "Processed"})
+            # Clean up temp file
+            os.unlink(temp_file_path)
 
         return InvoiceResponse(
             success=True,
@@ -113,6 +134,12 @@ async def upload_invoice(
         )
 
     except Exception as e:
+        # Clean up temp file if it exists
+        if 'temp_file_path' in locals():
+            try:
+                os.unlink(temp_file_path)
+            except:
+                pass
         return InvoiceResponse(success=False, message=f"Error uploading invoice: {str(e)}")
 
 
@@ -123,8 +150,11 @@ async def list_invoices(
     sort_by: str = Query("upload_date"),
     sort_dir: str = Query("desc"),
     search: Optional[str] = Query(None),
-    user=Depends(get_current_user)
+    user=None
 ):
+
+    if user is None:
+        user = {"id": "test-user-esra"}
     """
     Get a list of invoices with pagination and filtering
     """
@@ -161,12 +191,106 @@ async def list_invoices(
     except Exception as e:
         return InvoicesResponse(success=False, message=f"Error fetching invoices: {str(e)}")
 
+@router.get("/test-pdf2image")
+async def test_pdf2image():
+    """Test that pdf2image is working properly"""
+    try:
+        # Create a simple test PDF
+        import tempfile
+        from reportlab.pdfgen import canvas
+
+        # Create a test PDF
+        pdf_path = tempfile.mktemp(suffix=".pdf")
+        c = canvas.Canvas(pdf_path)
+        c.drawString(100, 100, "Test PDF")
+        c.save()
+
+        print(f"Created test PDF at {pdf_path}")
+
+        # Try to convert it
+        print("Attempting to convert PDF to image...")
+        from pdf2image import convert_from_path
+        images = convert_from_path(pdf_path)
+
+        print(f"Successfully converted PDF to {len(images)} images")
+
+        # Try to save the image
+        png_path = tempfile.mktemp(suffix=".png")
+        images[0].save(png_path, format="PNG")
+
+        print(f"Successfully saved PNG to {png_path}")
+
+        # Clean up
+        import os
+        os.unlink(pdf_path)
+        os.unlink(png_path)
+
+        return {"success": True, "message": "PDF2Image is working correctly"}
+
+    except Exception as e:
+        import traceback
+        error_details = traceback.format_exc()
+        return {
+            "success": False,
+            "message": f"PDF2Image test failed: {str(e)}",
+            "details": error_details
+        }
+
+# Also add the Poppler check endpoint
+@router.get("/check-poppler")
+async def check_poppler():
+    """Check if poppler is installed and accessible"""
+    import subprocess
+    import shutil
+
+    results = {}
+
+    # Check if pdftoppm is in PATH
+    pdftoppm_path = shutil.which("pdftoppm")
+    results["pdftoppm_in_path"] = pdftoppm_path is not None
+    results["pdftoppm_path"] = pdftoppm_path
+
+    # Try running pdftoppm -v
+    try:
+        process = subprocess.run(["pdftoppm", "-v"], capture_output=True, text=True)
+        results["pdftoppm_version"] = process.stderr.strip()
+        results["pdftoppm_available"] = True
+    except Exception as e:
+        results["pdftoppm_available"] = False
+        results["pdftoppm_error"] = str(e)
+
+    return results
+
+
+@router.get("/check-schema")
+async def check_schema():
+    """Check the database schema"""
+    try:
+        # Try to get information about the table structure
+        result = supabase.table("zokuai_invoices").select("*").limit(1).execute()
+
+        # Get a sample record
+        sample = result.data[0] if result.data else {}
+
+        # Extract column names
+        columns = list(sample.keys()) if sample else []
+
+        return {
+            "table_name": "zokuai_invoices",
+            "columns": columns,
+            "sample_record": sample
+        }
+    except Exception as e:
+        return {"error": str(e)}
 
 @router.get("/{invoice_id}", response_model=InvoiceResponse)
 async def get_invoice_by_id(
     invoice_id: str = Path(...),
-    user=Depends(get_current_user)
+    user=None
 ):
+
+    if user is None:
+        user = {"id": "test-user-esra"}
     """
     Get an invoice by ID
     """
@@ -193,8 +317,11 @@ async def get_invoice_by_id(
 async def extract_data(
     invoice_id: str,
     extraction_request: ExtractionRequest,
-    user=Depends(get_current_user)
+    user=None
 ):
+
+    if user is None:
+        user = {"id": "test-user-esra"}
     """
     Extract data from an invoice using OpenAI Vision API
     """
@@ -213,7 +340,7 @@ async def extract_data(
         storage_path = invoice["storage_path"]
 
         with tempfile.NamedTemporaryFile(delete=False) as temp_file:
-            # Download file to temp location
+            # Download file to temp location - using supabase directly
             file_data = supabase.storage.from_(STORAGE_BUCKET).download(storage_path)
             temp_file.write(file_data)
             temp_file_path = temp_file.name
@@ -246,8 +373,11 @@ async def extract_data(
 async def export_json(
     invoice_id: str,
     export_request: ExportRequest,
-    user=Depends(get_current_user)
+    user=None
 ):
+
+    if user is None:
+        user = {"id": "test-user-esra"}
     """
     Export extracted data as JSON
     """
@@ -301,8 +431,11 @@ async def export_json(
 async def export_xml(
     invoice_id: str,
     export_request: ExportRequest,
-    user=Depends(get_current_user)
+    user=None
 ):
+
+    if user is None:
+        user = {"id": "test-user-esra"}
     """
     Export extracted data as XML
     """
@@ -373,12 +506,107 @@ async def export_xml(
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Error exporting data: {str(e)}")
 
+# In your invoice.py or a similar file
+@router.get("/{invoice_id}/extracted-text")
+async def get_extracted_text(invoice_id: str, user=None):
+    """Get the extracted text from a processed invoice"""
+    try:
+        # For testing with dummy user
+        if user is None:
+            user = {"id": "test-user-esra"}
+
+        # Get the invoice
+        invoice = await get_invoice(invoice_id)
+        if not invoice:
+            return {"success": False, "message": "Invoice not found"}
+
+        # Get the processed PNG path
+        pdf_path = None
+        if invoice.get("file_url"):
+            # Extract the path from the URL or storage_path
+            storage_path = invoice.get("storage_path")
+            if storage_path:
+                # You might need to adjust this path construction
+                base_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+                uploaded_dir = os.path.join(base_dir, "uploaded_files")
+                pdf_path = os.path.join(uploaded_dir, storage_path)
+
+                # If that doesn't exist, try temp location
+                if not os.path.exists(pdf_path):
+                    # This is a guess at where your temp files might be
+                    temp_dir = tempfile.gettempdir()
+                    file_name = os.path.basename(storage_path)
+                    pdf_path = os.path.join(temp_dir, file_name)
+
+        if not pdf_path or not os.path.exists(pdf_path):
+            # Try to find the processed PNG
+            base_name = os.path.splitext(os.path.basename(storage_path))[0]
+            temp_dir = tempfile.gettempdir()
+            processed_dir = os.path.join(temp_dir, "processed")
+            png_path = os.path.join(processed_dir, f"{base_name}.png")
+
+            if os.path.exists(png_path):
+                # Use the PNG instead
+                pdf_path = png_path
+
+        if not pdf_path or not os.path.exists(pdf_path):
+            return {
+                "success": False,
+                "message": "File not found",
+                "tried_paths": [pdf_path, png_path if 'png_path' in locals() else None]
+            }
+
+        # Extract text from PDF or PNG
+        from PIL import Image
+        import pytesseract
+        import fitz  # PyMuPDF
+
+        extracted_text = ""
+
+        # If it's a PDF
+        if pdf_path.lower().endswith('.pdf'):
+            try:
+                doc = fitz.open(pdf_path)
+                for page_num in range(len(doc)):
+                    page = doc.load_page(page_num)
+                    extracted_text += page.get_text()
+                doc.close()
+            except Exception as pdf_err:
+                return {"success": False, "message": f"PDF extraction error: {str(pdf_err)}"}
+
+        # If it's an image
+        elif pdf_path.lower().endswith(('.png', '.jpg', '.jpeg')):
+            try:
+                img = Image.open(pdf_path)
+                extracted_text = pytesseract.image_to_string(img)
+            except Exception as img_err:
+                return {"success": False, "message": f"Image extraction error: {str(img_err)}"}
+
+        # Return the extracted text
+        return {
+            "success": True,
+            "extracted_text": extracted_text,
+            "text_length": len(extracted_text),
+            "file_path": pdf_path
+        }
+
+    except Exception as e:
+        import traceback
+        return {
+            "success": False,
+            "message": f"Error: {str(e)}",
+            "traceback": traceback.format_exc()
+        }
+
 
 @router.delete("/{invoice_id}", response_model=InvoiceResponse)
 async def delete_invoice_by_id(
     invoice_id: str = Path(...),
-    user=Depends(get_current_user)
+    user=None
 ):
+
+    if user is None:
+        user = {"id": "test-user-esra"}
     """
     Delete an invoice by ID
     """

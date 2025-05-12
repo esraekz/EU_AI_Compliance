@@ -17,14 +17,20 @@ class QuestionResponse(BaseModel):
     answer: str
     sources: dict
 
+
+
 @router.post("", response_model=QuestionResponse)
 async def ask_document_question(
     request: QuestionRequest,
-    user=Depends(get_current_user)
+    user=None  # Changed from user=Depends(get_current_user)
 ):
     """
     Answer a question about specific documents
     """
+    # Add this check for testing
+    if user is None:
+        user = {"id": "test-user-esra"}  # Use the same test user ID as in your invoice functions
+
     result = await answer_question(
         query=request.question,
         user_id=user['id'],

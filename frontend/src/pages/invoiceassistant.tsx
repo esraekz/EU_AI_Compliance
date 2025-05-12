@@ -1,8 +1,8 @@
 import React from "react";
-import InvoiceAssistant from "../components/InvoiceAssistant/InvoiceAssistant";
+import InvoiceChatPage from "../components/InvoiceChatPage/InvoiceChatPage";
 
 const AssistantPage: React.FC = () => {
-  return <InvoiceAssistant />;
+  return <InvoiceChatPage />;
 };
 
 export default AssistantPage;

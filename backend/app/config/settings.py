@@ -10,7 +10,8 @@ class Settings(BaseSettings):
     supabase_url: str
     supabase_key: str
     openai_api_key: str
-    
+    jwt_secret: str
+
     class Config:
         env_file = ".env"
 

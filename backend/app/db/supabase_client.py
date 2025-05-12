@@ -19,19 +19,19 @@ supabase: Client = create_client(SUPABASE_URL, SUPABASE_KEY)
 # Helper functions for invoice table operations
 async def create_invoice(invoice_data):
     """Create a new invoice record in Supabase"""
-    result = supabase.table("invoices").insert(invoice_data).execute()
+    result = supabase.table("zokuai_invoices").insert(invoice_data).execute()
     return result.data[0] if result.data else None
 
 
 async def get_invoice(invoice_id):
     """Get an invoice by ID"""
-    result = supabase.table("invoices").select("*").eq("id", invoice_id).execute()
+    result = supabase.table("zokuai_invoices").select("*").eq("id", invoice_id).execute()
     return result.data[0] if result.data else None
 
 
 async def get_invoices(limit=10, offset=0, sort_by="upload_date", sort_dir="desc", search=None, user_id=None):
     """Get invoices with pagination, sorting and filtering"""
-    query = supabase.table("invoices").select("*", count="exact")
+    query = supabase.table("zokuai_invoices").select("*", count="exact")
 
     # Filter by user_id if provided
     if user_id:
@@ -41,9 +41,8 @@ async def get_invoices(limit=10, offset=0, sort_by="upload_date", sort_dir="desc
     if search:
         query = query.or_(f"filename.ilike.%{search}%,supplier.ilike.%{search}%")
 
-    # Add sorting
-    sort_order = "desc" if sort_dir.lower() == "desc" else "asc"
-    query = query.order(sort_by, sort_order)
+    # Add sorting - using simple single parameter
+    query = query.order(sort_by, desc=(sort_dir.lower() == "desc"))
 
     # Add pagination
     query = query.range(offset, offset + limit - 1)
@@ -58,14 +57,27 @@ async def get_invoices(limit=10, offset=0, sort_by="upload_date", sort_dir="desc
 
 
 async def update_invoice(invoice_id, invoice_data):
-    """Update an invoice record"""
-    result = supabase.table("invoices").update(invoice_data).eq("id", invoice_id).execute()
-    return result.data[0] if result.data else None
+    """Update an invoice by ID"""
+    try:
+        # Filter out fields that don't exist in the database table
+        allowed_fields = ["status", "supplier", "file_url", "storage_path"]
+        filtered_data = {k: v for k, v in invoice_data.items() if k in allowed_fields}
+
+        # Only attempt update if there are valid fields to update
+        if filtered_data:
+            result = supabase.table("zokuai_invoices").update(filtered_data).eq("id", invoice_id).execute()
+            return result.data[0] if result.data else None
+        else:
+            # If no valid fields to update, just return the current invoice
+            return await get_invoice(invoice_id)
+    except Exception as e:
+        print(f"Error updating invoice: {str(e)}")
+        raise e
 
 
 async def delete_invoice(invoice_id):
     """Delete an invoice record"""
-    result = supabase.table("invoices").delete().eq("id", invoice_id).execute()
+    result = supabase.table("zokuai_invoices").delete().eq("id", invoice_id).execute()
     return result.data[0] if result.data else None
 
 

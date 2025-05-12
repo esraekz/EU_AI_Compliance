@@ -1,6 +1,17 @@
 // src/services/api.ts
 import axios from 'axios';
-import { ExtractionField, Invoice, ApiResponse, InvoiceListParams } from '../types/invoice';
+import { ApiResponse, ExtractionField, Invoice, InvoiceListParams } from '../types/invoice';
+
+// Add QA Types
+export interface QuestionRequest {
+  question: string;
+  document_ids?: string[];
+}
+
+export interface QuestionResponse {
+  answer: string;
+  sources: Record<string, any>;
+}
 
 const api = axios.create({
   baseURL: process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000/api',
@@ -30,17 +41,21 @@ api.interceptors.request.use((config) => {
 });
 
 // Invoice API functions
+
 export const invoiceApi = {
-  // Get all invoices with optional filtering
+    // Get all invoices with optional filtering
   getInvoices: async (params: InvoiceListParams = {}): Promise<ApiResponse<{ invoices: Invoice[]; total: number }>> => {
     try {
-      const response = await api.get('/invoices', { params });
+      // Use this URL path for invoice endpoints
+      const response = await axios.get('http://localhost:8000/invoices', { params });
       return response.data;
     } catch (error) {
       console.error('Error fetching invoices:', error);
       throw error;
     }
   },
+
+
 
   // Get single invoice by ID
   getInvoice: async (id: string): Promise<ApiResponse<Invoice>> => {
@@ -59,7 +74,7 @@ export const invoiceApi = {
       const formData = new FormData();
       formData.append('file', file);
 
-      const response = await api.post('/invoices', formData, {
+      const response = await axios.post('http://localhost:8000/invoices', formData, {
         headers: {
           'Content-Type': 'multipart/form-data'
         }
@@ -146,7 +161,36 @@ export const invoiceApi = {
       return invoiceApi.exportXml(invoiceId, fields);
     }
   }
+};
 
+// Add QA API functions
+export const qaApi = {
+  // Ask a question about documents
+  askQuestion: async (question: string, documentIds?: string[]): Promise<QuestionResponse> => {
+    try {
+      const requestData: QuestionRequest = {
+        question,
+        document_ids: documentIds
+      };
+
+      // Note the different endpoint path - this goes directly to /qa rather than /api/qa
+      const response = await axios.post<QuestionResponse>(
+        `${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'}/qa`,
+        requestData,
+        {
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${typeof window !== 'undefined' ? localStorage.getItem('auth_token') : null}`
+          }
+        }
+      );
+
+      return response.data;
+    } catch (error) {
+      console.error('Error asking question:', error);
+      throw error;
+    }
+  }
 };
 
 export default api;
