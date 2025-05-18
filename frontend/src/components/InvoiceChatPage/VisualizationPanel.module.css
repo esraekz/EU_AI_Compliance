@@ -1,0 +1,99 @@
+/* frontend/src/components/InvoiceChatPage/VisualizationPanel.module.css */
+.visualizationPanel {
+    width: 120px;
+    height: 100%;
+    background-color: #f9f9f9;
+    border-left: 1px solid #e2e2e2;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    transition: all 0.3s ease;
+    position: relative;
+}
+
+.header {
+    padding: 20px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    background-color: #f0f0f0;
+    border-radius: 0 4px 0 0;
+}
+
+.header h3 {
+    margin: 0;
+    font-size: 14px;
+    font-weight: bold;
+}
+
+.closeButton {
+    background: none;
+    border: none;
+    font-size: 16px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 24px;
+    height: 24px;
+    border-radius: 50%;
+    background-color: #f0f0f0;
+}
+
+.closeButton:hover {
+    background-color: #e0e0e0;
+}
+
+.visualizationOptions {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 10px;
+    overflow-y: auto;
+}
+
+.visualizationCard {
+    width: 100px;
+    height: 85px;
+    background-color: white;
+    border: 1px solid #5b42f3;
+    border-radius: 4px;
+    margin-bottom: 10px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 10px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.visualizationCard:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+}
+
+.visualizationIcon {
+    font-size: 20px;
+    margin-bottom: 5px;
+    width: 40px;
+    height: 40px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background-color: #f0f0f7;
+    border-radius: 4px;
+}
+
+.visualizationTitle {
+    font-size: 10px;
+    font-weight: bold;
+    text-align: center;
+    margin-bottom: 2px;
+}
+
+.visualizationDescription {
+    font-size: 9px;
+    color: #666;
+    text-align: center;
+}

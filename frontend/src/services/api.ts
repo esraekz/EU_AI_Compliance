@@ -163,17 +163,21 @@ export const invoiceApi = {
   }
 };
 
-// Add QA API functions
+
+// In src/services/api.ts or similar
 export const qaApi = {
   // Ask a question about documents
   askQuestion: async (question: string, documentIds?: string[]): Promise<QuestionResponse> => {
     try {
+      // Log what we're sending for debugging
+      console.log('Sending to backend:', { question, documentIds });
+
       const requestData: QuestionRequest = {
         question,
         document_ids: documentIds
       };
 
-      // Note the different endpoint path - this goes directly to /qa rather than /api/qa
+      // Make sure the endpoint is correct
       const response = await axios.post<QuestionResponse>(
         `${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'}/qa`,
         requestData,
@@ -185,6 +189,9 @@ export const qaApi = {
         }
       );
 
+      // Log the response for debugging
+      console.log('Response from server:', response.data);
+
       return response.data;
     } catch (error) {
       console.error('Error asking question:', error);
@@ -192,5 +199,6 @@ export const qaApi = {
     }
   }
 };
+
 
 export default api;
