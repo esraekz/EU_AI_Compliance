@@ -56,12 +56,20 @@ const ChatPanel: React.FC<ChatPanelProps> = ({
         setIsLoading(true);
 
         try {
-            // Log what we're sending to the backend for debugging
+            // *** IMPORTANT: Add debugging here ***
+            console.log('=== FRONTEND DEBUG ===');
             console.log('Asking question:', question);
-            console.log('Selected documents:', selectedDocuments);
+            console.log('Selected documents from props:', selectedDocuments);
+            console.log('Selected documents type:', typeof selectedDocuments);
+            console.log('Selected documents length:', selectedDocuments.length);
+
+            // *** CRITICAL FIX: Make sure we're sending the correct data ***
+            const documentIdsToSend = selectedDocuments && selectedDocuments.length > 0 ? selectedDocuments : undefined;
+
+            console.log('Document IDs being sent to API:', documentIdsToSend);
 
             // Send selected document IDs to backend
-            const response = await qaApi.askQuestion(question, selectedDocuments);
+            const response = await qaApi.askQuestion(question, documentIdsToSend);
 
             console.log('Response from backend:', response);
 
@@ -89,7 +97,6 @@ const ChatPanel: React.FC<ChatPanelProps> = ({
         }
     };
 
-
     return (
         <div className={`${styles.chatPanel} ${isVisualizationPanelOpen ? styles.narrow : ''}`}>
             <div className={styles.header}>
@@ -109,6 +116,10 @@ const ChatPanel: React.FC<ChatPanelProps> = ({
 
             <div className={styles.contextIndicator}>
                 Analyzing {selectedDocuments.length} selected documents
+                {/* Debug info */}
+                <div style={{ fontSize: '10px', color: '#666', marginTop: '4px' }}>
+                    IDs: {selectedDocuments.length > 0 ? selectedDocuments.join(', ') : 'None selected'}
+                </div>
             </div>
 
             {/* Chat messages area */}
