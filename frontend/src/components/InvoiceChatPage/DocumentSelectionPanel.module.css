@@ -1,4 +1,5 @@
-/* frontend/src/components/InvoiceChatPage/DocumentSelectionPanel.module.css */
+/* Complete DocumentSelectionPanel.module.css */
+
 .documentPanel {
     width: 250px;
     height: 100%;
@@ -7,6 +8,8 @@
     display: flex;
     flex-direction: column;
     overflow: hidden;
+    position: relative;
+    /* Added for resize handle */
 }
 
 .panelTitle {
@@ -144,4 +147,60 @@
 
 .errorState {
     color: #e53935;
+}
+
+/* NEW RESIZE FUNCTIONALITY STYLES */
+
+/* Resize handle - the draggable area */
+.resizeHandle {
+    position: absolute;
+    top: 0;
+    right: 0;
+    width: 4px;
+    height: 100%;
+    background-color: transparent;
+    cursor: col-resize;
+    z-index: 10;
+    transition: background-color 0.2s ease;
+}
+
+.resizeHandle:hover {
+    background-color: #5b42f3;
+    opacity: 0.7;
+}
+
+.resizeHandle:active {
+    background-color: #5b42f3;
+    opacity: 1;
+}
+
+/* Visual indicator when hovering over the resize area */
+.resizeHandle::before {
+    content: '';
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    width: 2px;
+    height: 40px;
+    background-color: #d0d0d0;
+    border-radius: 1px;
+    opacity: 0;
+    transition: opacity 0.2s ease;
+}
+
+.resizeHandle:hover::before {
+    opacity: 1;
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+    .documentPanel {
+        min-width: 200px;
+    }
+
+    .resizeHandle {
+        width: 6px;
+        /* Make it easier to grab on mobile */
+    }
 }

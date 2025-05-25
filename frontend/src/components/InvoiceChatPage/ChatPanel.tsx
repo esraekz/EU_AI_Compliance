@@ -1,6 +1,6 @@
-// frontend/src/components/InvoiceChatPage/ChatPanel.tsx
+// Simplified ChatPanel.tsx - Direct Layout (no mainContent wrapper)
 
-import React, { useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { qaApi } from '../../services/api';
 import styles from './ChatPanel.module.css';
 
@@ -14,12 +14,14 @@ interface ChatPanelProps {
     selectedDocuments: string[];
     isVisualizationPanelOpen: boolean;
     onOpenVisualization: () => void;
+    visualizationPanelWidth?: number;
 }
 
 const ChatPanel: React.FC<ChatPanelProps> = ({
     selectedDocuments,
     isVisualizationPanelOpen,
-    onOpenVisualization
+    onOpenVisualization,
+    visualizationPanelWidth = 400
 }) => {
     const [messages, setMessages] = useState<Message[]>([
         {
@@ -31,6 +33,45 @@ const ChatPanel: React.FC<ChatPanelProps> = ({
 
     const [input, setInput] = useState('');
     const [isLoading, setIsLoading] = useState(false);
+
+    // Resize functionality for when visualization panel is open
+    const [isResizing, setIsResizing] = useState(false);
+    const chatPanelRef = useRef<HTMLDivElement>(null);
+
+    // Mouse events for resizing (only when visualization panel is open)
+    const handleMouseDown = (e: React.MouseEvent) => {
+        if (!isVisualizationPanelOpen) return;
+        e.preventDefault();
+        setIsResizing(true);
+    };
+
+    useEffect(() => {
+        const handleMouseMove = (e: MouseEvent) => {
+            if (!isResizing || !isVisualizationPanelOpen) return;
+            // Resize logic can be implemented here if needed
+        };
+
+        const handleMouseUp = () => {
+            setIsResizing(false);
+        };
+
+        if (isResizing) {
+            document.addEventListener('mousemove', handleMouseMove);
+            document.addEventListener('mouseup', handleMouseUp);
+            document.body.style.userSelect = 'none';
+            document.body.style.cursor = 'col-resize';
+        } else {
+            document.body.style.userSelect = '';
+            document.body.style.cursor = '';
+        }
+
+        return () => {
+            document.removeEventListener('mousemove', handleMouseMove);
+            document.removeEventListener('mouseup', handleMouseUp);
+            document.body.style.userSelect = '';
+            document.body.style.cursor = '';
+        };
+    }, [isResizing, isVisualizationPanelOpen]);
 
     // Quick questions for the bottom section
     const quickQuestions = [
@@ -70,17 +111,14 @@ const ChatPanel: React.FC<ChatPanelProps> = ({
             console.log('=== FRONTEND DEBUG ===');
             console.log('Asking question:', question);
             console.log('Selected documents from props:', selectedDocuments);
-            console.log('Selected documents type:', typeof selectedDocuments);
             console.log('Selected documents length:', selectedDocuments?.length || 0);
-            console.log('Individual document IDs:', selectedDocuments);
 
-            // CRITICAL: Ensure we're sending an array of strings
+            // Ensure we're sending an array of strings
             const documentIdsToSend = Array.isArray(selectedDocuments) && selectedDocuments.length > 0
-                ? selectedDocuments.filter(id => id && typeof id === 'string') // Filter out any invalid IDs
+                ? selectedDocuments.filter(id => id && typeof id === 'string')
                 : undefined;
 
             console.log('Document IDs being sent to API:', documentIdsToSend);
-            console.log('API URL:', process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000');
 
             // Send selected document IDs to backend
             const response = await qaApi.askQuestion(question, documentIdsToSend);
@@ -112,22 +150,23 @@ const ChatPanel: React.FC<ChatPanelProps> = ({
     };
 
     return (
-        <div className={`${styles.chatPanel} ${isVisualizationPanelOpen ? styles.narrow : ''}`}>
+        <div
+            className={`${styles.chatPanel} ${isVisualizationPanelOpen ? styles.withVisualization : ''}`}
+            ref={chatPanelRef}
+        >
+            {/* Header - Fixed at top */}
             <div className={styles.header}>
                 <h2>Invoice Assistant</h2>
-
-                {/* Visualization toggle button */}
-                {!isVisualizationPanelOpen && (
-                    <button
-                        className={styles.visualizeButton}
-                        onClick={onOpenVisualization}
-                        title="Open visualization panel"
-                    >
-                        📊
-                    </button>
-                )}
+                <button
+                    className={`${styles.visualizeButton} ${isVisualizationPanelOpen ? styles.active : ''}`}
+                    onClick={onOpenVisualization}
+                    title={isVisualizationPanelOpen ? "Visualization panel is open" : "Open visualization panel"}
+                >
+                    📊
+                </button>
             </div>
 
+            {/* Context indicator - Fixed below header */}
             <div className={styles.contextIndicator}>
                 {selectedDocuments.length === 0 ? (
                     <span style={{ color: '#ff6b6b' }}>⚠️ No documents selected - Please select documents to analyze</span>
@@ -143,7 +182,7 @@ const ChatPanel: React.FC<ChatPanelProps> = ({
                 </div>
             </div>
 
-            {/* Chat messages area */}
+            {/* Chat messages area - Scrollable middle section */}
             <div className={styles.chatArea}>
                 {messages.map((message) => (
                     <div
@@ -166,7 +205,7 @@ const ChatPanel: React.FC<ChatPanelProps> = ({
                 )}
             </div>
 
-            {/* Quick questions section at bottom */}
+            {/* Quick questions section - Fixed above input */}
             <div className={styles.quickQuestions}>
                 <h3>Quick Questions</h3>
                 <div className={styles.questionPills}>
@@ -183,7 +222,7 @@ const ChatPanel: React.FC<ChatPanelProps> = ({
                 </div>
             </div>
 
-            {/* Input area */}
+            {/* Input area - Fixed at bottom */}
             <div className={styles.inputArea}>
                 <input
                     type="text"
@@ -202,6 +241,14 @@ const ChatPanel: React.FC<ChatPanelProps> = ({
                     →
                 </button>
             </div>
+
+            {/* Resize handle (only visible when visualization panel is open) */}
+            {isVisualizationPanelOpen && (
+                <div
+                    className={styles.resizeHandle}
+                    onMouseDown={handleMouseDown}
+                />
+            )}
         </div>
     );
 };

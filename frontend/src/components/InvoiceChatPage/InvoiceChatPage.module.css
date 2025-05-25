@@ -1,58 +1,103 @@
-/* frontend/src/components/InvoiceChatPage/InvoiceChatPage.module.css */
+/* Fixed InvoiceChatPage.module.css - Proper Height Constraints */
+
 .container {
     display: flex;
-    width: 100%;
-    height: 100%;
+    width: 100vw;
+    height: 100vh;
+    /* Full viewport height */
+    max-height: 100vh;
+    /* Don't exceed viewport */
     overflow: hidden;
+    /* Prevent container from scrolling */
+    position: fixed;
+    /* Fix to viewport */
+    top: 0;
+    left: 0;
+    transition: all 0.3s ease;
 }
 
+/* Two-panel layout (default) */
+.twoPanel {
+    /* Default layout - document panel + chat panel */
+}
+
+/* Three-panel layout (when visualization is open) */
+.threePanel {
+    /* All three panels visible */
+}
+
+/* Document Panel Styles */
 .documentPanel {
-    width: 300px;
     background-color: #ffffff;
     border-right: 1px solid #e5e7eb;
     display: flex;
     flex-direction: column;
-    height: 100%;
+    height: 100vh;
+    /* Full viewport height */
+    max-height: 100vh;
+    /* Don't exceed viewport */
+    flex-shrink: 0;
+    position: relative;
+    overflow: hidden;
+    /* Prevent panel from scrolling */
 }
 
+/* Chat Panel Styles - This is the key fix */
+.chatPanel {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    min-width: 300px;
+    background-color: white;
+    position: relative;
+    height: 100vh;
+    /* Full viewport height */
+    max-height: 100vh;
+    /* Don't exceed viewport */
+    overflow: hidden;
+    /* Prevent panel from scrolling */
+}
+
+/* When visualization panel is open, chat panel gets constrained */
+.threePanel .chatPanel {
+    min-width: 250px;
+}
+
+/* Visualization Panel Styles */
+.visualizationPanel {
+    background-color: #ffffff;
+    border-left: 1px solid #e5e7eb;
+    display: flex;
+    flex-direction: column;
+    height: 100vh;
+    /* Full viewport height */
+    max-height: 100vh;
+    /* Don't exceed viewport */
+    flex-shrink: 0;
+    position: relative;
+    overflow: hidden;
+    /* Prevent panel from scrolling */
+}
+
+/* Panel Title Styles */
 .panelTitle {
     padding: 1rem;
     margin: 0;
     border-bottom: 1px solid #e5e7eb;
     font-size: 1.25rem;
     color: #111827;
+    font-weight: 600;
+    flex-shrink: 0;
+    /* Don't shrink */
 }
 
-.tabNavigation {
-    display: flex;
-    border-bottom: 1px solid #e5e7eb;
-}
-
-.tabButton {
-    flex: 1;
-    background: none;
-    border: none;
-    padding: 0.75rem;
-    text-align: center;
-    cursor: pointer;
-    color: #6b7280;
-    transition: all 0.2s ease;
-}
-
-.tabButton:hover {
-    color: #4f46e5;
-}
-
-.activeTab {
-    color: #4f46e5;
-    border-bottom: 2px solid #4f46e5;
-    font-weight: 500;
-}
-
+/* Document List Styles */
 .documentList {
     flex: 1;
     overflow-y: auto;
     padding: 0.5rem;
+    min-height: 0;
+    /* Allow shrinking */
 }
 
 .documentItem {
@@ -63,6 +108,7 @@
     margin-bottom: 0.5rem;
     cursor: pointer;
     transition: background-color 0.15s ease;
+    border: 1px solid transparent;
 }
 
 .documentItem:hover {
@@ -71,6 +117,7 @@
 
 .selected {
     background-color: #ede9fe;
+    border-color: #a855f7;
 }
 
 .selected:hover {
@@ -136,18 +183,24 @@
     color: #b91c1c;
 }
 
+/* Loading and Error States */
 .loadingState,
 .errorState,
 .emptyState {
     padding: 1rem;
     text-align: center;
     color: #6b7280;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    height: 100%;
 }
 
 .errorState {
     color: #b91c1c;
 }
 
+/* Selection Summary */
 .selectionSummary {
     padding: 0.75rem;
     background-color: #f9fafb;
@@ -155,39 +208,87 @@
     font-size: 0.875rem;
     color: #4f46e5;
     text-align: center;
+    flex-shrink: 0;
+    /* Don't shrink */
 }
 
+/* Help Text */
 .helpText {
     padding: 0.75rem;
     background-color: #fffbeb;
     border-top: 1px solid #fcd34d;
     font-size: 0.75rem;
     color: #92400e;
+    flex-shrink: 0;
+    /* Don't shrink */
 }
 
 .helpText p {
     margin: 0.25rem 0;
 }
 
-.chatPanel {
-    flex: 1;
-    display: flex;
-    flex-direction: column;
+/* Remove any transitions that might cause layout issues */
+.container,
+.container * {
+    box-sizing: border-box;
 }
 
-/* Responsive adjustments */
+/* Prevent layout shifts during resize */
+.container.resizing {
+    pointer-events: none;
+}
+
+.container.resizing .documentPanel,
+.container.resizing .chatPanel,
+.container.resizing .visualizationPanel {
+    pointer-events: auto;
+}
+
+/* Responsive Design */
+@media (max-width: 1200px) {
+    .threePanel .chatPanel {
+        min-width: 200px;
+    }
+}
+
 @media (max-width: 768px) {
     .container {
         flex-direction: column;
+        position: relative;
+        /* Allow normal scrolling on mobile */
+        height: 100vh;
     }
 
     .documentPanel {
-        width: 100%;
-        height: auto;
-        max-height: 40vh;
+        width: 100% !important;
+        height: 35vh;
+        max-height: 35vh;
+        border-right: none;
+        border-bottom: 1px solid #e5e7eb;
     }
 
     .chatPanel {
-        height: 60vh;
+        height: 65vh !important;
+        max-height: 65vh !important;
+        min-width: unset !important;
+    }
+
+    .visualizationPanel {
+        position: fixed !important;
+        top: 0;
+        right: 0;
+        width: 100% !important;
+        height: 100vh !important;
+        max-height: 100vh !important;
+        z-index: 1000;
+        border-left: none;
+        box-shadow: -2px 0 10px rgba(0, 0, 0, 0.1);
+    }
+
+    /* Hide resize handles on mobile */
+    .documentPanel .resizeHandle,
+    .chatPanel .resizeHandle,
+    .visualizationPanel .resizeHandle {
+        display: none;
     }
 }
