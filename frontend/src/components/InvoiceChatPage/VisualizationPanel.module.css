@@ -2,27 +2,43 @@
 
 .visualizationPanel {
     width: 400px;
-    height: 100%;
+    height: calc(100vh - 68px);
+    /* Match other panels - closer to screen edge */
+    max-height: calc(100vh - 68px);
+    /* Prevent overflow */
     background-color: #ffffff;
-    border-left: 1px solid #e2e2e2;
+    border-left: none;
+    /* Remove border, use margin for separation */
     display: flex;
     flex-direction: column;
     overflow: hidden;
     transition: all 0.3s ease;
     position: relative;
-    animation: slideIn 0.3s ease-out;
+    margin-bottom: 8px;
+    /* Same bottom margin as other panels */
+    margin-left: 5px;
+    /* Small gap between chat and visualization panels */
+    border-radius: 8px;
+    /* More rounded corners */
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+    /* Enhanced shadow */
+    animation: slideInFromRight 0.3s ease-out;
+    /* Better animation */
 }
 
-@keyframes slideIn {
+@keyframes slideInFromRight {
     from {
-        width: 0;
+        transform: translateX(100%);
         opacity: 0;
     }
 
     to {
+        transform: translateX(0);
         opacity: 1;
     }
 }
+
+/* Remove the old slideIn animation - replace it with the one above */
 
 /* Header */
 .header {
@@ -297,12 +313,16 @@
 @media (max-width: 768px) {
     .visualizationPanel {
         width: 100% !important;
+        height: 100vh !important;
+        /* Full height on mobile */
         position: fixed;
         top: 0;
         right: 0;
         z-index: 1000;
         border-left: none;
         box-shadow: -2px 0 10px rgba(0, 0, 0, 0.1);
+        margin: 0;
+        /* Remove margins on mobile */
     }
 
     .resizeHandle {
