@@ -44,6 +44,17 @@ const ChatPanel: React.FC<ChatPanelProps> = ({
     const askQuestion = async (question: string) => {
         if (!question.trim() || isLoading) return;
 
+        // Check if documents are selected
+        if (!selectedDocuments || selectedDocuments.length === 0) {
+            const errorMessage: Message = {
+                id: Date.now(),
+                type: 'error',
+                text: 'Please select at least one document before asking questions.'
+            };
+            setMessages(prevMessages => [...prevMessages, errorMessage]);
+            return;
+        }
+
         // Add user message to chat
         const userMessage: Message = {
             id: Date.now(),
@@ -56,17 +67,20 @@ const ChatPanel: React.FC<ChatPanelProps> = ({
         setIsLoading(true);
 
         try {
-            // *** IMPORTANT: Add debugging here ***
             console.log('=== FRONTEND DEBUG ===');
             console.log('Asking question:', question);
             console.log('Selected documents from props:', selectedDocuments);
             console.log('Selected documents type:', typeof selectedDocuments);
-            console.log('Selected documents length:', selectedDocuments.length);
+            console.log('Selected documents length:', selectedDocuments?.length || 0);
+            console.log('Individual document IDs:', selectedDocuments);
 
-            // *** CRITICAL FIX: Make sure we're sending the correct data ***
-            const documentIdsToSend = selectedDocuments && selectedDocuments.length > 0 ? selectedDocuments : undefined;
+            // CRITICAL: Ensure we're sending an array of strings
+            const documentIdsToSend = Array.isArray(selectedDocuments) && selectedDocuments.length > 0
+                ? selectedDocuments.filter(id => id && typeof id === 'string') // Filter out any invalid IDs
+                : undefined;
 
             console.log('Document IDs being sent to API:', documentIdsToSend);
+            console.log('API URL:', process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000');
 
             // Send selected document IDs to backend
             const response = await qaApi.askQuestion(question, documentIdsToSend);
@@ -88,7 +102,7 @@ const ChatPanel: React.FC<ChatPanelProps> = ({
             const errorMessage: Message = {
                 id: Date.now() + 1,
                 type: 'error',
-                text: 'Sorry, I encountered an error while processing your question. Please try again.'
+                text: `Sorry, I encountered an error while processing your question. Please try again. ${err instanceof Error ? err.message : ''}`
             };
 
             setMessages(prevMessages => [...prevMessages, errorMessage]);
@@ -115,8 +129,15 @@ const ChatPanel: React.FC<ChatPanelProps> = ({
             </div>
 
             <div className={styles.contextIndicator}>
-                Analyzing {selectedDocuments.length} selected documents
-                {/* Debug info */}
+                {selectedDocuments.length === 0 ? (
+                    <span style={{ color: '#ff6b6b' }}>⚠️ No documents selected - Please select documents to analyze</span>
+                ) : selectedDocuments.length === 1 ? (
+                    <span>🔍 Analyzing 1 selected document</span>
+                ) : (
+                    <span>🔍 Analyzing {selectedDocuments.length} selected documents</span>
+                )}
+
+                {/* Debug info - you can remove this later */}
                 <div style={{ fontSize: '10px', color: '#666', marginTop: '4px' }}>
                     IDs: {selectedDocuments.length > 0 ? selectedDocuments.join(', ') : 'None selected'}
                 </div>
