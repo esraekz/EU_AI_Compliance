@@ -312,6 +312,27 @@ async def get_invoice_by_id(
     except Exception as e:
         return InvoiceResponse(success=False, message=f"Error fetching invoice: {str(e)}")
 
+@router.get("/debug/test-multi-doc/{doc_id1}/{doc_id2}")
+async def debug_test_multi_doc(doc_id1: str, doc_id2: str):
+    """Test multi-document retrieval"""
+    try:
+        from ..services.e_qa_system import retrieve_context_from_embeddings
+
+        result = await retrieve_context_from_embeddings(
+            query="test query",
+            user_id="test-user-esra",
+            document_ids=[doc_id1, doc_id2]
+        )
+
+        return {
+            "success": True,
+            "document_ids_requested": [doc_id1, doc_id2],
+            "documents_found": result["document_count"],
+            "documents": result["documents"]
+        }
+    except Exception as e:
+        return {"success": False, "error": str(e)}
+
 
 @router.post("/{invoice_id}/extract", response_model=ExtractionResponse)
 async def extract_data(
