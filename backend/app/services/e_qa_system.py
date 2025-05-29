@@ -5,7 +5,7 @@ import json
 from app.db.supabase_client import supabase, get_invoice
 from app.services.e_openai_completions import get_completion
 from app.services.e_document_processor import generate_embeddings
-from app.services.e_chat_manager import store_chat_message, search_similar_questions
+from app.services.e_chat_manager import store_chat_message
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
@@ -153,7 +153,7 @@ async def retrieve_context_from_embeddings(query, user_id=None, document_ids=Non
 # Fix 2: Update the answer_question function to use user-friendly names in prompts
 # In e_qa_system.py, update the answer_question function:
 
-async def answer_question(query, user_id=None, document_ids=None):
+async def answer_question(query, user_id=None, document_ids=None, session_id=None):
     """
     Answer using vector embeddings - WITH USER-FRIENDLY DOCUMENT NAMES
     """
@@ -163,6 +163,7 @@ async def answer_question(query, user_id=None, document_ids=None):
         print(f"User ID: {user_id}")
         print(f"Document IDs: {document_ids}")
         print(f"Number of documents requested: {len(document_ids) if document_ids else 0}")
+        print(f"Session ID: {session_id}")
 
         # Use vector search to find relevant documents
         context = await retrieve_context_from_embeddings(query, user_id, document_ids)
@@ -235,7 +236,13 @@ Please provide a helpful and accurate answer based on {context_description}.
         # Store chat history
         if user_id:
             try:
-                await store_chat_message(user_id, query, response, document_ids)
+                await store_chat_message(
+                    user_id=user_id,
+                    query=query,
+                    response=response,
+                    document_ids=document_ids,
+                    session_id=session_id
+                )
             except Exception as e:
                 print(f"Error storing chat: {str(e)}")
 
@@ -244,14 +251,18 @@ Please provide a helpful and accurate answer based on {context_description}.
         for doc in context.get("documents", []):
             processed_document_names.append(doc.get('filename', f'Document {doc.get("id", "Unknown")[:8]}'))
 
+
         return {
             "answer": response,
             "sources": {
                 "document_count": context["document_count"],
                 "document_ids": document_ids or [],
-                "documents_processed": processed_document_names  # Use user-friendly names
+                "documents_processed": processed_document_names,
+                "session_id": session_id  # ADD THIS LINE
             }
         }
+
+
 
     except Exception as e:
         print(f"ERROR in QA system: {str(e)}")

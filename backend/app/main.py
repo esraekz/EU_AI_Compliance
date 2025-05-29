@@ -10,6 +10,7 @@ from app.config.settings import get_settings
 from app.api.endpoints import router as endpoints_router  # Import the router correctly
 from app.routers.invoice import router as invoice_router  # Add this line
 from app.routers.qa_router import router as qa_router
+from app.routers.chat_sessions import router as chat_sessions_router
 
 # Configure logging
 logging.basicConfig(
@@ -42,6 +43,7 @@ app.add_middleware(
 app.include_router(endpoints_router, prefix="/api")  # Add a prefix for API routes
 app.include_router(invoice_router)  # Add this line - no prefix means routes will be at /invoices
 app.include_router(qa_router)
+app.include_router(chat_sessions_router)
 
 
 @app.get("/")
