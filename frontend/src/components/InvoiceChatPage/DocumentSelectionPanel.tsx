@@ -1,29 +1,50 @@
-// Updated DocumentSelectionPanel.tsx - MINIMAL CHANGES, keep original styling
+// Complete Updated DocumentSelectionPanel.tsx - With Debugging
 
 import React, { useEffect, useRef, useState } from 'react';
+import { useGlobalChatState } from '../../hooks/useGlobalChatState';
 import styles from './DocumentSelectionPanel.module.css';
 
 interface DocumentSelectionPanelProps {
     documents: any[];
     isLoading: boolean;
     error: string | null;
-    selectedDocuments: string[];
-    setSelectedDocuments: (docs: string[]) => void;
-    expandedDocumentId: string | null;
-    setExpandedDocumentId: (id: string | null) => void;
 }
 
 const DocumentSelectionPanel: React.FC<DocumentSelectionPanelProps> = ({
     documents,
     isLoading,
-    error,
-    selectedDocuments,
-    setSelectedDocuments,
-    expandedDocumentId,
-    setExpandedDocumentId
+    error
 }) => {
-    // ONLY ADD RESIZE FUNCTIONALITY - keep everything else the same
-    const [panelWidth, setPanelWidth] = useState(250); // Use original default width
+    // Add debugging to see what's happening
+    useEffect(() => {
+        console.log('📋 DocumentSelectionPanel Debug:');
+        console.log('- isLoading:', isLoading);
+        console.log('- error:', error);
+        console.log('- documents:', documents);
+        console.log('- documents.length:', documents.length);
+        if (documents.length > 0) {
+            console.log('- first document:', documents[0]);
+        }
+    }, [documents, isLoading, error]);
+
+    // Use global state instead of props
+    const {
+        selectedDocuments,
+        expandedDocumentId,
+        setSelectedDocuments,
+        setExpandedDocumentId
+    } = useGlobalChatState();
+
+    // Add debugging for global state
+    useEffect(() => {
+        console.log('🌐 Global State Debug:');
+        console.log('- selectedDocuments:', selectedDocuments);
+        console.log('- selectedDocuments.length:', selectedDocuments.length);
+        console.log('- expandedDocumentId:', expandedDocumentId);
+    }, [selectedDocuments, expandedDocumentId]);
+
+    // Panel resizing state (local)
+    const [panelWidth, setPanelWidth] = useState(300);
     const [isResizing, setIsResizing] = useState(false);
     const panelRef = useRef<HTMLDivElement>(null);
 
@@ -70,8 +91,9 @@ const DocumentSelectionPanel: React.FC<DocumentSelectionPanelProps> = ({
         };
     }, [isResizing]);
 
-    // KEEP ALL ORIGINAL FUNCTIONS UNCHANGED
+    // Document selection functions
     const toggleDocumentSelection = (documentId: string) => {
+        console.log('📌 Toggling document selection:', documentId);
         if (selectedDocuments.includes(documentId)) {
             setSelectedDocuments(selectedDocuments.filter(id => id !== documentId));
         } else {
@@ -80,6 +102,7 @@ const DocumentSelectionPanel: React.FC<DocumentSelectionPanelProps> = ({
     };
 
     const toggleDocumentExpansion = (documentId: string) => {
+        console.log('📖 Toggling document expansion:', documentId);
         if (expandedDocumentId === documentId) {
             setExpandedDocumentId(null);
         } else {
@@ -88,46 +111,128 @@ const DocumentSelectionPanel: React.FC<DocumentSelectionPanelProps> = ({
     };
 
     const formatDate = (dateString: string) => {
-        const date = new Date(dateString);
-        return date.toLocaleDateString();
+        try {
+            const date = new Date(dateString);
+            return date.toLocaleDateString();
+        } catch {
+            return 'Invalid Date';
+        }
     };
 
-    // KEEP ORIGINAL LOADING/ERROR STATES - just add width style
+    // Clear selection handler
+    const clearSelection = () => {
+        console.log('🧹 Clearing selection');
+        setSelectedDocuments([]);
+        setExpandedDocumentId(null);
+    };
+
+    // Select all handler
+    const selectAll = () => {
+        console.log('📑 Selecting all documents');
+        const allIds = documents.map(doc => doc.id);
+        console.log('All document IDs:', allIds);
+        setSelectedDocuments(allIds);
+    };
+
+    // Loading state
     if (isLoading) {
         return (
             <div className={styles.documentPanel} style={{ width: panelWidth }}>
-                <div className={styles.loadingState}>Loading documents...</div>
+                <div className={styles.panelTitle} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                    <span>Processed Documents</span>
+                    <small style={{ fontSize: '10px', color: '#666' }}>
+                        Loading...
+                    </small>
+                </div>
+                <div className={styles.loadingState}>
+                    Loading documents...
+                    <br />
+                    <small style={{ fontSize: '12px', color: '#666', marginTop: '8px' }}>
+                        If this persists, check console for errors (F12)
+                    </small>
+                </div>
                 <div className={styles.resizeHandle} onMouseDown={handleMouseDown} />
             </div>
         );
     }
 
+    // Error state
     if (error) {
         return (
             <div className={styles.documentPanel} style={{ width: panelWidth }}>
-                <div className={styles.errorState}>{error}</div>
+                <div className={styles.panelTitle}>Processed Documents</div>
+                <div className={styles.errorState}>
+                    {error}
+                    <br />
+                    <small style={{ fontSize: '12px', color: '#666', marginTop: '8px' }}>
+                        Check network tab (F12) for API errors
+                    </small>
+                </div>
                 <div className={styles.resizeHandle} onMouseDown={handleMouseDown} />
             </div>
         );
     }
 
+    // Empty state
     if (documents.length === 0) {
         return (
             <div className={styles.documentPanel} style={{ width: panelWidth }}>
-                <div className={styles.emptyState}>No processed documents found</div>
+                <div className={styles.panelTitle}>Processed Documents</div>
+                <div className={styles.emptyState}>
+                    No processed documents found
+                    <br />
+                    <small style={{ fontSize: '12px', color: '#666', marginTop: '8px' }}>
+                        Upload documents and wait for processing to complete
+                    </small>
+                </div>
                 <div className={styles.resizeHandle} onMouseDown={handleMouseDown} />
             </div>
         );
     }
 
-    // KEEP ORIGINAL JSX STRUCTURE - just add width style and resize handle
     return (
         <div
             className={styles.documentPanel}
             style={{ width: panelWidth }}
             ref={panelRef}
         >
-            <h2 className={styles.panelTitle}>Processed Documents</h2>
+            <div className={styles.panelTitle} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                <span>Processed Documents</span>
+                {/* Add debug info and selection controls */}
+                <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+                    <small style={{ fontSize: '10px', color: '#666' }}>
+                        {documents.length} docs
+                    </small>
+                    <button
+                        onClick={selectAll}
+                        style={{
+                            background: 'none',
+                            border: '1px solid #5b42f3',
+                            color: '#5b42f3',
+                            padding: '2px 6px',
+                            borderRadius: '4px',
+                            cursor: 'pointer',
+                            fontSize: '10px'
+                        }}
+                    >
+                        All
+                    </button>
+                    <button
+                        onClick={clearSelection}
+                        style={{
+                            background: 'none',
+                            border: '1px solid #666',
+                            color: '#666',
+                            padding: '2px 6px',
+                            borderRadius: '4px',
+                            cursor: 'pointer',
+                            fontSize: '10px'
+                        }}
+                    >
+                        Clear
+                    </button>
+                </div>
+            </div>
 
             <div className={styles.documentList}>
                 {documents.map((doc) => (
@@ -151,9 +256,11 @@ const DocumentSelectionPanel: React.FC<DocumentSelectionPanelProps> = ({
                             </div>
                             <div className={styles.documentInfo}>
                                 <div className={styles.documentName}>{doc.filename}</div>
-                                <div className={styles.documentDate}>{formatDate(doc.uploadDate)}</div>
+                                <div className={styles.documentDate}>
+                                    {formatDate(doc.uploadDate || doc.upload_date)}
+                                </div>
                                 <div className={`${styles.documentStatus} ${styles.processed}`}>
-                                    Processed
+                                    {doc.status || 'Processed'}
                                 </div>
                             </div>
                         </div>
@@ -162,12 +269,15 @@ const DocumentSelectionPanel: React.FC<DocumentSelectionPanelProps> = ({
                         {expandedDocumentId === doc.id && (
                             <div className={styles.documentPreview}>
                                 <div className={styles.previewIcon}>
-                                    {doc.fileType === 'pdf' ? 'PDF' : 'IMG'}
+                                    {doc.fileType === 'pdf' || doc.filename?.endsWith('.pdf') ? 'PDF' : 'IMG'}
                                 </div>
                                 <div className={styles.previewDetails}>
-                                    <div className={styles.previewInfo}>Invoice #: {doc.invoiceNumber || 'N/A'}</div>
-                                    <div className={styles.previewInfo}>Total: ${doc.total || 'N/A'}</div>
-                                    <div className={styles.previewInfo}>Vendor: {doc.vendor || 'N/A'}</div>
+                                    <div className={styles.previewInfo}>Status: {doc.status || 'Processed'}</div>
+                                    <div className={styles.previewInfo}>Supplier: {doc.supplier || 'N/A'}</div>
+                                    <div className={styles.previewInfo}>ID: {doc.id?.substring(0, 8)}...</div>
+                                    <div className={styles.previewInfo}>
+                                        User: {doc.user_id?.substring(0, 12) || 'N/A'}
+                                    </div>
                                 </div>
                             </div>
                         )}
@@ -175,16 +285,49 @@ const DocumentSelectionPanel: React.FC<DocumentSelectionPanelProps> = ({
                 ))}
             </div>
 
+            {/* Enhanced selection summary */}
             {selectedDocuments.length > 0 && (
                 <div className={styles.selectionSummary}>
-                    <span>{selectedDocuments.length} documents selected</span>
-                    <button className={styles.askButton}>
-                        Ask Questions
-                    </button>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', width: '100%' }}>
+                        <span>{selectedDocuments.length} document{selectedDocuments.length !== 1 ? 's' : ''} selected</span>
+                        <div style={{ display: 'flex', gap: '8px' }}>
+                            <button
+                                className={styles.askButton}
+                                onClick={clearSelection}
+                                style={{
+                                    background: 'transparent',
+                                    color: '#5b42f3',
+                                    border: '1px solid #5b42f3'
+                                }}
+                            >
+                                Clear
+                            </button>
+                            <button className={styles.askButton}>
+                                Ready to Chat
+                            </button>
+                        </div>
+                    </div>
                 </div>
             )}
 
-            {/* ONLY ADD THIS - the resize handle */}
+            {/* Help text when no documents are selected */}
+            {selectedDocuments.length === 0 && (
+                <div className={styles.helpText}>
+                    <p>💡 Select documents to start analyzing</p>
+                    <p>Check the boxes next to documents you want to analyze with AI</p>
+                    {/* Debug info */}
+                    <details style={{ fontSize: '10px', marginTop: '8px' }}>
+                        <summary style={{ cursor: 'pointer', color: '#666' }}>Debug Info</summary>
+                        <div style={{ marginTop: '4px', color: '#999' }}>
+                            <div>Available documents: {documents.length}</div>
+                            <div>Selected documents: {selectedDocuments.length}</div>
+                            <div>Global state working: {selectedDocuments ? '✅' : '❌'}</div>
+                        </div>
+                    </details>
+                </div>
+            )}
+
+            {/* Resize handle */}
             <div
                 className={styles.resizeHandle}
                 onMouseDown={handleMouseDown}

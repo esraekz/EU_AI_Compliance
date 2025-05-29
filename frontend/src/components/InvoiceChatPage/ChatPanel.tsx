@@ -1,42 +1,118 @@
-// Simplified ChatPanel.tsx - Direct Layout (no mainContent wrapper)
+// Updated ChatPanel.tsx - With Automatic Session Creation
 
 import React, { useEffect, useRef, useState } from 'react';
-import { qaApi } from '../../services/api';
+import { useGlobalChatState } from '../../hooks/useGlobalChatState';
+import { ChatSession, qaApi } from '../../services/api';
+import ChatHistoryModal from './ChatHistoryModal';
 import styles from './ChatPanel.module.css';
 
-interface Message {
-    id: number;
-    type: 'user' | 'system' | 'error';
-    text: string;
-}
-
 interface ChatPanelProps {
-    selectedDocuments: string[];
-    isVisualizationPanelOpen: boolean;
-    onOpenVisualization: () => void;
     visualizationPanelWidth?: number;
 }
 
 const ChatPanel: React.FC<ChatPanelProps> = ({
-    selectedDocuments,
-    isVisualizationPanelOpen,
-    onOpenVisualization,
     visualizationPanelWidth = 400
 }) => {
-    const [messages, setMessages] = useState<Message[]>([
-        {
-            id: 1,
-            type: 'system',
-            text: 'I can help you analyze your documents. What would you like to know?'
-        }
-    ]);
+    // Use global state with session management
+    const {
+        messages,
+        selectedDocuments,
+        isVisualizationPanelOpen,
+        currentSessionId, // NEW: Track current session
+        addMessage,
+        setVisualizationPanelOpen,
+        clearMessages,
+        resetPageState,
+        setSelectedDocuments,
+        createNewSession, // NEW: Create session function
+        loadSession // NEW: Load session function
+    } = useGlobalChatState();
 
     const [input, setInput] = useState('');
     const [isLoading, setIsLoading] = useState(false);
+    const [isClient, setIsClient] = useState(false);
+    const [isHistoryModalOpen, setIsHistoryModalOpen] = useState(false);
+
+    // Handle client-side hydration
+    useEffect(() => {
+        setIsClient(true);
+    }, []);
 
     // Resize functionality for when visualization panel is open
     const [isResizing, setIsResizing] = useState(false);
     const chatPanelRef = useRef<HTMLDivElement>(null);
+
+    // Auto-scroll to bottom when new messages are added
+    const chatAreaRef = useRef<HTMLDivElement>(null);
+
+    useEffect(() => {
+        if (chatAreaRef.current) {
+            chatAreaRef.current.scrollTop = chatAreaRef.current.scrollHeight;
+        }
+    }, [messages]);
+
+    // Chat management functions
+    const handleNewChat = async () => {
+        if (window.confirm('Start a new chat? This will clear current messages but keep selected documents.')) {
+            clearMessages();
+            // Note: We'll create a new session when the user asks their first question
+        }
+    };
+
+    const handleClearAll = () => {
+        if (window.confirm('Clear everything? This will reset all messages and selections.')) {
+            resetPageState();
+        }
+    };
+
+    const handleShowHistory = () => {
+        setIsHistoryModalOpen(true);
+    };
+
+    // Load session from history - UPDATED
+    const handleLoadSession = (session: ChatSession & { messages?: any[] }) => {
+        try {
+            console.log('📖 Loading session:', session);
+
+            // Convert messages to our format
+            const formattedMessages = [];
+
+            if (session.messages && session.messages.length > 0) {
+                session.messages.forEach((msg: any) => {
+                    formattedMessages.push({
+                        id: Date.now() + Math.random(),
+                        type: msg.type === 'user' ? 'user' : 'system',
+                        text: msg.text || msg.content || 'Message content not available',
+                        timestamp: msg.timestamp || Date.now()
+                    });
+                });
+            }
+
+            // Load the session using global state
+            loadSession(
+                session.id,
+                formattedMessages,
+                session.selected_documents || []
+            );
+
+            // Add confirmation message
+            setTimeout(() => {
+                addMessage({
+                    type: 'system',
+                    text: `✅ Loaded session: "${session.title}" with ${formattedMessages.length} messages and ${session.selected_documents?.length || 0} documents.`
+                });
+            }, 100);
+
+            console.log('✅ Session loaded successfully');
+
+        } catch (error) {
+            console.error('❌ Error loading session:', error);
+            addMessage({
+                type: 'error',
+                text: 'Failed to load chat session. Please try again.'
+            });
+        }
+    };
 
     // Mouse events for resizing (only when visualization panel is open)
     const handleMouseDown = (e: React.MouseEvent) => {
@@ -58,18 +134,14 @@ const ChatPanel: React.FC<ChatPanelProps> = ({
         if (isResizing) {
             document.addEventListener('mousemove', handleMouseMove);
             document.addEventListener('mouseup', handleMouseUp);
-            document.body.style.userSelect = 'none';
-            document.body.style.cursor = 'col-resize';
         } else {
-            document.body.style.userSelect = '';
-            document.body.style.cursor = '';
+            document.removeEventListener('mousemove', handleMouseMove);
+            document.removeEventListener('mouseup', handleMouseUp);
         }
 
         return () => {
             document.removeEventListener('mousemove', handleMouseMove);
             document.removeEventListener('mouseup', handleMouseUp);
-            document.body.style.userSelect = '';
-            document.body.style.cursor = '';
         };
     }, [isResizing, isVisualizationPanelOpen]);
 
@@ -81,175 +153,272 @@ const ChatPanel: React.FC<ChatPanelProps> = ({
         'Extract vendor details'
     ];
 
-    // Send question to backend with selected document IDs
+    // UPDATED: Send question to backend with automatic session creation
     const askQuestion = async (question: string) => {
         if (!question.trim() || isLoading) return;
 
         // Check if documents are selected
         if (!selectedDocuments || selectedDocuments.length === 0) {
-            const errorMessage: Message = {
-                id: Date.now(),
+            addMessage({
                 type: 'error',
                 text: 'Please select at least one document before asking questions.'
-            };
-            setMessages(prevMessages => [...prevMessages, errorMessage]);
+            });
             return;
         }
 
         // Add user message to chat
-        const userMessage: Message = {
-            id: Date.now(),
+        addMessage({
             type: 'user',
             text: question
-        };
+        });
 
-        setMessages(prevMessages => [...prevMessages, userMessage]);
         setInput('');
         setIsLoading(true);
 
         try {
-            console.log('=== FRONTEND DEBUG ===');
-            console.log('Asking question:', question);
-            console.log('Selected documents from props:', selectedDocuments);
-            console.log('Selected documents length:', selectedDocuments?.length || 0);
+            console.log('=== CHAT SESSION DEBUG ===');
+            console.log('Current session ID:', currentSessionId);
+            console.log('Question:', question);
+            console.log('Selected documents:', selectedDocuments);
+
+            // Create session if this is the first message (no current session)
+            let sessionId = currentSessionId;
+            if (!sessionId) {
+                console.log('🆕 No current session, creating new one...');
+                sessionId = await createNewSession(question);
+                if (!sessionId) {
+                    console.log('❌ Failed to create session, continuing without session');
+                }
+            }
 
             // Ensure we're sending an array of strings
             const documentIdsToSend = Array.isArray(selectedDocuments) && selectedDocuments.length > 0
                 ? selectedDocuments.filter(id => id && typeof id === 'string')
                 : undefined;
 
-            console.log('Document IDs being sent to API:', documentIdsToSend);
+            console.log('📡 Sending to API:', {
+                question,
+                documentIds: documentIdsToSend,
+                sessionId
+            });
 
-            // Send selected document IDs to backend
-            const response = await qaApi.askQuestion(question, documentIdsToSend);
+            // Send question to backend with session ID
+            const response = await qaApi.askQuestion(question, documentIdsToSend, sessionId || undefined);
 
-            console.log('Response from backend:', response);
+            console.log('📡 Response from backend:', response);
 
             // Add AI response to chat
-            const aiMessage: Message = {
-                id: Date.now() + 1,
+            addMessage({
                 type: 'system',
                 text: response.answer || 'No answer was provided'
-            };
+            });
 
-            setMessages(prevMessages => [...prevMessages, aiMessage]);
+            // If backend returned a session ID and we don't have one, use it
+            if (response.session_id && !currentSessionId) {
+                console.log('🔄 Backend returned session ID:', response.session_id);
+                // Note: This would require updating the global state
+            }
+
         } catch (err) {
-            console.error('Error asking question:', err);
+            console.error('💥 Error asking question:', err);
 
             // Add error message to chat
-            const errorMessage: Message = {
-                id: Date.now() + 1,
+            addMessage({
                 type: 'error',
                 text: `Sorry, I encountered an error while processing your question. Please try again. ${err instanceof Error ? err.message : ''}`
-            };
-
-            setMessages(prevMessages => [...prevMessages, errorMessage]);
+            });
         } finally {
             setIsLoading(false);
         }
     };
 
+    const handleOpenVisualization = () => {
+        setVisualizationPanelOpen(true);
+    };
+
     return (
-        <div
-            className={`${styles.chatPanel} ${isVisualizationPanelOpen ? styles.withVisualization : ''}`}
-            ref={chatPanelRef}
-        >
-            {/* Header - Fixed at top */}
-            <div className={styles.header}>
-                <h2>Invoice Assistant</h2>
-                <button
-                    className={`${styles.visualizeButton} ${isVisualizationPanelOpen ? styles.active : ''}`}
-                    onClick={onOpenVisualization}
-                    title={isVisualizationPanelOpen ? "Visualization panel is open" : "Open visualization panel"}
-                >
-                    📊
-                </button>
-            </div>
-
-            {/* Context indicator - Fixed below header */}
-            <div className={styles.contextIndicator}>
-                {selectedDocuments.length === 0 ? (
-                    <span style={{ color: '#ff6b6b' }}>⚠️ No documents selected - Please select documents to analyze</span>
-                ) : selectedDocuments.length === 1 ? (
-                    <span>🔍 Analyzing 1 selected document</span>
-                ) : (
-                    <span>🔍 Analyzing {selectedDocuments.length} selected documents</span>
-                )}
-
-                {/* Debug info - you can remove this later */}
-                <div style={{ fontSize: '10px', color: '#666', marginTop: '4px' }}>
-                    IDs: {selectedDocuments.length > 0 ? selectedDocuments.join(', ') : 'None selected'}
-                </div>
-            </div>
-
-            {/* Chat messages area - Scrollable middle section */}
-            <div className={styles.chatArea}>
-                {messages.map((message) => (
-                    <div
-                        key={message.id}
-                        className={`${styles.message} ${message.type === 'user'
-                            ? styles.userMessage
-                            : message.type === 'error'
-                                ? styles.errorMessage
-                                : styles.systemMessage
-                            }`}
-                    >
-                        <p>{message.text}</p>
-                    </div>
-                ))}
-
-                {isLoading && (
-                    <div className={styles.loadingIndicator}>
-                        <p>Thinking...</p>
-                    </div>
-                )}
-            </div>
-
-            {/* Quick questions section - Fixed above input */}
-            <div className={styles.quickQuestions}>
-                <h3>Quick Questions</h3>
-                <div className={styles.questionPills}>
-                    {quickQuestions.map((question, index) => (
+        <>
+            <div
+                className={`${styles.chatPanel} ${isVisualizationPanelOpen ? styles.withVisualization : ''}`}
+                ref={chatPanelRef}
+            >
+                {/* Header with chat management buttons */}
+                <div className={styles.header}>
+                    <h2>Invoice Assistant</h2>
+                    <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+                        {/* Chat Management Buttons */}
                         <button
-                            key={index}
-                            className={styles.questionPill}
-                            onClick={() => askQuestion(question)}
-                            disabled={isLoading}
+                            onClick={handleShowHistory}
+                            style={{
+                                background: 'none',
+                                border: '1px solid #d0d0d0',
+                                padding: '6px 10px',
+                                borderRadius: '6px',
+                                cursor: 'pointer',
+                                fontSize: '12px',
+                                color: '#5b42f3',
+                                display: 'flex',
+                                alignItems: 'center',
+                                gap: '4px'
+                            }}
+                            title="Chat History"
                         >
-                            {question}
+                            📋 History
                         </button>
-                    ))}
+
+                        <button
+                            onClick={handleNewChat}
+                            style={{
+                                background: '#5b42f3',
+                                color: 'white',
+                                border: 'none',
+                                padding: '6px 10px',
+                                borderRadius: '6px',
+                                cursor: 'pointer',
+                                fontSize: '12px',
+                                display: 'flex',
+                                alignItems: 'center',
+                                gap: '4px'
+                            }}
+                            title="Start New Chat"
+                        >
+                            ➕ New Chat
+                        </button>
+
+                        <button
+                            onClick={handleClearAll}
+                            style={{
+                                background: 'none',
+                                border: '1px solid #e53935',
+                                color: '#e53935',
+                                padding: '6px 10px',
+                                borderRadius: '6px',
+                                cursor: 'pointer',
+                                fontSize: '12px',
+                                display: 'flex',
+                                alignItems: 'center',
+                                gap: '4px'
+                            }}
+                            title="Clear Everything"
+                        >
+                            🗑️ Clear
+                        </button>
+
+                        {/* Visualization button */}
+                        <button
+                            className={`${styles.visualizeButton} ${isVisualizationPanelOpen ? styles.active : ''}`}
+                            onClick={handleOpenVisualization}
+                            title={isVisualizationPanelOpen ? "Visualization panel is open" : "Open visualization panel"}
+                        >
+                            📊
+                        </button>
+                    </div>
                 </div>
+
+                {/* Context indicator */}
+                <div className={styles.contextIndicator}>
+                    {selectedDocuments.length === 0 ? (
+                        <span style={{ color: '#ff6b6b' }}>⚠️ No documents selected - Please select documents to analyze</span>
+                    ) : selectedDocuments.length === 1 ? (
+                        <span>🔍 Analyzing 1 selected document</span>
+                    ) : (
+                        <span>🔍 Analyzing {selectedDocuments.length} selected documents</span>
+                    )}
+
+                    {/* Session debug info */}
+                    {currentSessionId && (
+                        <div style={{ fontSize: '10px', color: '#666', marginTop: '2px' }}>
+                            Session: {currentSessionId.substring(0, 8)}...
+                        </div>
+                    )}
+                </div>
+
+                {/* Chat messages area */}
+                <div className={styles.chatArea} ref={chatAreaRef}>
+                    {messages.map((message) => (
+                        <div
+                            key={message.id}
+                            className={`${styles.message} ${message.type === 'user'
+                                ? styles.userMessage
+                                : message.type === 'error'
+                                    ? styles.errorMessage
+                                    : styles.systemMessage
+                                }`}
+                        >
+                            <p>{message.text}</p>
+                            {message.timestamp && isClient && (
+                                <small style={{
+                                    opacity: 0.7,
+                                    fontSize: '10px',
+                                    display: 'block',
+                                    marginTop: '4px'
+                                }}>
+                                    {new Date(message.timestamp).toLocaleTimeString()}
+                                </small>
+                            )}
+                        </div>
+                    ))}
+
+                    {isLoading && (
+                        <div className={styles.loadingIndicator}>
+                            <p>Thinking...</p>
+                        </div>
+                    )}
+                </div>
+
+                {/* Quick questions section */}
+                <div className={styles.quickQuestions}>
+                    <h3>Quick Questions</h3>
+                    <div className={styles.questionPills}>
+                        {quickQuestions.map((question, index) => (
+                            <button
+                                key={index}
+                                className={styles.questionPill}
+                                onClick={() => askQuestion(question)}
+                                disabled={isLoading}
+                            >
+                                {question}
+                            </button>
+                        ))}
+                    </div>
+                </div>
+
+                {/* Input area */}
+                <div className={styles.inputArea}>
+                    <input
+                        type="text"
+                        className={styles.input}
+                        placeholder="Ask about your documents..."
+                        value={input}
+                        onChange={(e) => setInput(e.target.value)}
+                        onKeyDown={(e) => e.key === "Enter" && askQuestion(input)}
+                        disabled={isLoading}
+                    />
+                    <button
+                        className={`${styles.sendButton} ${isLoading ? styles.disabledButton : ''}`}
+                        onClick={() => askQuestion(input)}
+                        disabled={isLoading}
+                    >
+                        →
+                    </button>
+                </div>
+
+                {/* Resize handle */}
+                {isVisualizationPanelOpen && (
+                    <div
+                        className={styles.resizeHandle}
+                        onMouseDown={handleMouseDown}
+                    />
+                )}
             </div>
 
-            {/* Input area - Fixed at bottom */}
-            <div className={styles.inputArea}>
-                <input
-                    type="text"
-                    className={styles.input}
-                    placeholder="Ask about your documents..."
-                    value={input}
-                    onChange={(e) => setInput(e.target.value)}
-                    onKeyDown={(e) => e.key === "Enter" && askQuestion(input)}
-                    disabled={isLoading}
-                />
-                <button
-                    className={`${styles.sendButton} ${isLoading ? styles.disabledButton : ''}`}
-                    onClick={() => askQuestion(input)}
-                    disabled={isLoading}
-                >
-                    →
-                </button>
-            </div>
-
-            {/* Resize handle (only visible when visualization panel is open) */}
-            {isVisualizationPanelOpen && (
-                <div
-                    className={styles.resizeHandle}
-                    onMouseDown={handleMouseDown}
-                />
-            )}
-        </div>
+            {/* Chat History Modal */}
+            <ChatHistoryModal
+                isOpen={isHistoryModalOpen}
+                onClose={() => setIsHistoryModalOpen(false)}
+                onLoadSession={handleLoadSession}
+            />
+        </>
     );
 };
 
