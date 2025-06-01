@@ -1,10 +1,11 @@
-// Updated ChatPanel.tsx - With Automatic Session Creation
+// Updated ChatPanel.tsx - With Custom Confirmation Modals
 
 import React, { useEffect, useRef, useState } from 'react';
 import { useGlobalChatState } from '../../hooks/useGlobalChatState';
 import { ChatSession, qaApi } from '../../services/api';
 import ChatHistoryModal from './ChatHistoryModal';
 import styles from './ChatPanel.module.css';
+import ConfirmationModal from './ConfirmationModal'; // NEW: Import custom modal
 
 interface ChatPanelProps {
     visualizationPanelWidth?: number;
@@ -18,20 +19,37 @@ const ChatPanel: React.FC<ChatPanelProps> = ({
         messages,
         selectedDocuments,
         isVisualizationPanelOpen,
-        currentSessionId, // NEW: Track current session
+        currentSessionId,
         addMessage,
         setVisualizationPanelOpen,
         clearMessages,
         resetPageState,
         setSelectedDocuments,
-        createNewSession, // NEW: Create session function
-        loadSession // NEW: Load session function
+        createNewSession,
+        loadSession
     } = useGlobalChatState();
 
     const [input, setInput] = useState('');
     const [isLoading, setIsLoading] = useState(false);
     const [isClient, setIsClient] = useState(false);
     const [isHistoryModalOpen, setIsHistoryModalOpen] = useState(false);
+
+    // NEW: Confirmation modal states
+    const [confirmationModal, setConfirmationModal] = useState<{
+        isOpen: boolean;
+        title: string;
+        message: string;
+        confirmText: string;
+        confirmColor: 'primary' | 'danger';
+        onConfirm: () => void;
+    }>({
+        isOpen: false,
+        title: '',
+        message: '',
+        confirmText: 'OK',
+        confirmColor: 'primary',
+        onConfirm: () => { }
+    });
 
     // Handle client-side hydration
     useEffect(() => {
@@ -51,25 +69,65 @@ const ChatPanel: React.FC<ChatPanelProps> = ({
         }
     }, [messages]);
 
-    // Chat management functions
+    // Helper function to show confirmation modal
+    const showConfirmation = (
+        title: string,
+        message: string,
+        onConfirm: () => void,
+        confirmText: string = 'OK',
+        confirmColor: 'primary' | 'danger' = 'primary'
+    ) => {
+        setConfirmationModal({
+            isOpen: true,
+            title,
+            message,
+            confirmText,
+            confirmColor,
+            onConfirm: () => {
+                onConfirm();
+                setConfirmationModal(prev => ({ ...prev, isOpen: false }));
+            }
+        });
+    };
+
+    // Chat management functions - UPDATED with custom modals
     const handleNewChat = async () => {
-        if (window.confirm('Start a new chat? This will clear current messages but keep selected documents.')) {
-            clearMessages();
-            // Note: We'll create a new session when the user asks their first question
-        }
+        showConfirmation(
+            'Start New Chat',
+            'This will clear current messages but keep selected documents. Are you sure?',
+            () => {
+                clearMessages();
+                addMessage({
+                    type: 'system',
+                    text: '🆕 Started new chat session. Ask me anything about your selected documents!'
+                });
+            },
+            'Start New',
+            'primary'
+        );
     };
 
     const handleClearAll = () => {
-        if (window.confirm('Clear everything? This will reset all messages and selections.')) {
-            resetPageState();
-        }
+        showConfirmation(
+            'Clear Everything',
+            'This will reset all messages and document selections. This action cannot be undone.',
+            () => {
+                resetPageState();
+                addMessage({
+                    type: 'system',
+                    text: '🧹 Everything has been cleared. Select documents and start a new conversation!'
+                });
+            },
+            'Clear All',
+            'danger'
+        );
     };
 
     const handleShowHistory = () => {
         setIsHistoryModalOpen(true);
     };
 
-    // Load session from history - UPDATED
+    // Load session from history
     const handleLoadSession = (session: ChatSession & { messages?: any[] }) => {
         try {
             console.log('📖 Loading session:', session);
@@ -153,7 +211,7 @@ const ChatPanel: React.FC<ChatPanelProps> = ({
         'Extract vendor details'
     ];
 
-    // UPDATED: Send question to backend with automatic session creation
+    // Send question to backend with automatic session creation
     const askQuestion = async (question: string) => {
         if (!question.trim() || isLoading) return;
 
@@ -216,7 +274,6 @@ const ChatPanel: React.FC<ChatPanelProps> = ({
             // If backend returned a session ID and we don't have one, use it
             if (response.session_id && !currentSessionId) {
                 console.log('🔄 Backend returned session ID:', response.session_id);
-                // Note: This would require updating the global state
             }
 
         } catch (err) {
@@ -417,6 +474,17 @@ const ChatPanel: React.FC<ChatPanelProps> = ({
                 isOpen={isHistoryModalOpen}
                 onClose={() => setIsHistoryModalOpen(false)}
                 onLoadSession={handleLoadSession}
+            />
+
+            {/* NEW: Custom Confirmation Modal */}
+            <ConfirmationModal
+                isOpen={confirmationModal.isOpen}
+                title={confirmationModal.title}
+                message={confirmationModal.message}
+                confirmText={confirmationModal.confirmText}
+                confirmColor={confirmationModal.confirmColor}
+                onConfirm={confirmationModal.onConfirm}
+                onCancel={() => setConfirmationModal(prev => ({ ...prev, isOpen: false }))}
             />
         </>
     );

@@ -1,7 +1,8 @@
-// src/components/InvoiceChatPage/ChatHistoryModal.tsx
+// src/components/InvoiceChatPage/ChatHistoryModal.tsx - Updated with Custom Confirmations
 
 import React, { useEffect, useState } from 'react';
 import { ChatSession, chatSessionsApi } from '../../services/api';
+import ConfirmationModal from './ConfirmationModal'; // Import the custom confirmation modal
 
 interface ChatHistoryModalProps {
     isOpen: boolean;
@@ -18,6 +19,17 @@ const ChatHistoryModal: React.FC<ChatHistoryModalProps> = ({
     const [isLoading, setIsLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
     const [activeTab, setActiveTab] = useState<'recent' | 'all'>('recent');
+
+    // NEW: Confirmation modal for delete
+    const [deleteConfirmation, setDeleteConfirmation] = useState<{
+        isOpen: boolean;
+        sessionId: string;
+        sessionTitle: string;
+    }>({
+        isOpen: false,
+        sessionId: '',
+        sessionTitle: ''
+    });
 
     // Fetch sessions when modal opens
     useEffect(() => {
@@ -61,28 +73,41 @@ const ChatHistoryModal: React.FC<ChatHistoryModalProps> = ({
                 onClose();
             } else {
                 console.error('❌ Failed to load session details');
+                // You could also replace this alert with a custom modal
                 alert('Failed to load chat session details');
             }
         } catch (err) {
             console.error('💥 Error loading session:', err);
+            // You could also replace this alert with a custom modal
             alert('Failed to load chat session');
         }
     };
 
-    const handleDeleteSession = async (sessionId: string, event: React.MouseEvent) => {
+    // NEW: Show delete confirmation instead of browser confirm
+    const handleDeleteRequest = (sessionId: string, sessionTitle: string, event: React.MouseEvent) => {
         event.stopPropagation();
-        if (!window.confirm('Delete this chat session? This cannot be undone.')) {
-            return;
-        }
+        setDeleteConfirmation({
+            isOpen: true,
+            sessionId,
+            sessionTitle
+        });
+    };
 
+    // NEW: Actual delete function
+    const handleConfirmDelete = async () => {
         try {
-            console.log('🗑️ Deleting session:', sessionId);
-            await chatSessionsApi.deleteSession(sessionId);
+            console.log('🗑️ Deleting session:', deleteConfirmation.sessionId);
+            await chatSessionsApi.deleteSession(deleteConfirmation.sessionId);
             console.log('✅ Session deleted');
+
+            // Close confirmation modal
+            setDeleteConfirmation({ isOpen: false, sessionId: '', sessionTitle: '' });
+
             // Refresh sessions list
             fetchSessions();
         } catch (err) {
             console.error('💥 Error deleting session:', err);
+            // You could also replace this alert with a custom modal
             alert('Failed to delete session');
         }
     };
@@ -327,7 +352,7 @@ const ChatHistoryModal: React.FC<ChatHistoryModalProps> = ({
                                         Load
                                     </button>
                                     <button
-                                        onClick={(e) => handleDeleteSession(session.id, e)}
+                                        onClick={(e) => handleDeleteRequest(session.id, session.title || 'Untitled Chat', e)}
                                         style={{
                                             padding: '6px 8px',
                                             background: 'none',
@@ -363,6 +388,18 @@ const ChatHistoryModal: React.FC<ChatHistoryModalProps> = ({
                     )}
                 </div>
             </div>
+
+            {/* NEW: Custom Confirmation Modal for Delete */}
+            <ConfirmationModal
+                isOpen={deleteConfirmation.isOpen}
+                title="Delete Chat Session"
+                message={`Are you sure you want to delete "${deleteConfirmation.sessionTitle}"? This action cannot be undone.`}
+                confirmText="Delete"
+                cancelText="Cancel"
+                confirmColor="danger"
+                onConfirm={handleConfirmDelete}
+                onCancel={() => setDeleteConfirmation({ isOpen: false, sessionId: '', sessionTitle: '' })}
+            />
         </>
     );
 };
