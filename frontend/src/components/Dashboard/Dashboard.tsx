@@ -1,3 +1,4 @@
+// Corrected Dashboard.tsx
 import { useRouter } from "next/router";
 import React from "react";
 import styles from "./Dashboard.module.css";
@@ -7,6 +8,11 @@ const Dashboard: React.FC = () => {
 
   const navigateTo = (path: string) => {
     router.push(path);
+  };
+
+  // Helper function to check if current route is active
+  const isActive = (path: string) => {
+    return router.pathname === path;
   };
 
   return (
@@ -20,7 +26,7 @@ const Dashboard: React.FC = () => {
       <aside className={styles.sidebar}>
         {/* Navigation */}
         <div
-          className={`${styles.navItem} ${styles.active}`}
+          className={`${styles.navItem} ${isActive("/upload") ? styles.active : ""}`}
           onClick={() => navigateTo("/upload")}
         >
           <div className={styles.icon}>
@@ -28,18 +34,51 @@ const Dashboard: React.FC = () => {
           </div>
           <span>Upload Documents</span>
         </div>
-        <div className={styles.navItem}>
+
+        <div
+          className={`${styles.navItem} ${isActive("/invoices") ? styles.active : ""}`}
+          onClick={() => navigateTo("/invoices")}
+        >
           <div className={styles.icon}>
             <div className={styles.box}></div>
           </div>
           <span>My Documents</span>
         </div>
-        <div className={styles.navItem}>
+
+        <div
+          className={`${styles.navItem} ${isActive("/chat") ? styles.active : ""}`}
+          onClick={() => navigateTo("/chat")}
+        >
           <div className={styles.icon}>
             <div className={styles.chat}></div>
           </div>
           <span>Chat Assistant</span>
         </div>
+
+        {/* TEMPORARY DEBUG: Prompt Optimizer Navigation Item */}
+        <div
+          className={styles.navItem}
+          onClick={() => navigateTo("/eu_act/prompt-optimizer")}
+          style={{
+            backgroundColor: 'red !important',
+            color: 'yellow !important',
+            border: '3px solid lime !important',
+            margin: '10px 0 !important'
+          }}
+        >
+          <div className={styles.icon}>
+            <div style={{
+              width: '15px',
+              height: '15px',
+              backgroundColor: 'yellow',
+              borderRadius: '50%'
+            }}></div>
+          </div>
+          <span style={{ color: 'yellow', fontWeight: 'bold' }}>
+            🔴 PROMPT OPTIMIZER
+          </span>
+        </div>
+
         <div className={styles.navItem}>
           <div className={styles.icon}>
             <div className={styles.cross}></div>
@@ -48,9 +87,34 @@ const Dashboard: React.FC = () => {
         </div>
       </aside>
 
+
+      {/* ADD THE DEBUG ITEM HERE - AFTER Extractions */}
+      <div
+        className={styles.navItem}
+        onClick={() => navigateTo("/eu_act/prompt-optimizer")}
+        style={{
+          backgroundColor: 'red !important',
+          color: 'yellow !important',
+          border: '3px solid lime !important',
+          margin: '10px 0 !important'
+        }}
+      >
+        <div className={styles.icon}>
+          <div style={{
+            width: '15px',
+            height: '15px',
+            backgroundColor: 'yellow',
+            borderRadius: '50%'
+          }}></div>
+        </div>
+        <span style={{ color: 'yellow', fontWeight: 'bold' }}>
+          🔴 PROMPT OPTIMIZER
+        </span>
+      </div>
+
+
       {/* Main Content */}
       <main className={styles.mainContent}>
-        {/* Quick Stats */}
         <section className={styles.stats}>
           <div className={styles.statBox}>
             <p>Total Documents</p>
@@ -62,7 +126,6 @@ const Dashboard: React.FC = () => {
           </div>
         </section>
 
-        {/* Recent Activity */}
         <section className={styles.recentActivity}>
           <h3>Recent Activity</h3>
           <div className={styles.activityList}>

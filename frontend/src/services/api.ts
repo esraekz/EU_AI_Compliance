@@ -72,7 +72,7 @@ export interface ChatSessionWithMessages {
 }
 
 const api = axios.create({
-  baseURL: process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000/api',
+  baseURL: process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000',
   headers: {
     'Content-Type': 'application/json',
   },
@@ -346,4 +346,233 @@ export const chatSessionsApi = {
   }
 };
 
+// Prompt Optimizer Types
+export interface Prompt {
+  id: string;
+  user_id: string;
+  title: string;
+  original_prompt: string;
+  optimized_prompt?: string;
+  status: 'draft' | 'optimized' | 'archived';
+  tags?: string[];
+  created_at: string;
+  updated_at: string;
+  optimization_results?: OptimizationResult[];
+}
+
+export interface PromptCreate {
+  title?: string;
+  original_prompt: string;
+  tags?: string[];
+}
+
+export interface PromptUpdate {
+  title?: string;
+  original_prompt?: string;
+  optimized_prompt?: string;
+  tags?: string[];
+  status?: 'draft' | 'optimized' | 'archived';
+}
+
+export interface OptimizationResult {
+  id: string;
+  prompt_id: string;
+  analysis_type: 'clarity' | 'security' | 'performance' | 'structure';
+  score: number;
+  suggestions: Array<{
+    improvement?: string;
+    suggestion?: string;
+    fix?: string;
+    example?: string;
+    reason?: string;
+    benefit?: string;
+  }>;
+  issues_found: Array<{
+    type: string;
+    description: string;
+    location?: string;
+    severity?: string;
+    impact?: string;
+  }>;
+  token_count_original: number;
+  token_count_optimized: number;
+  created_at: string;
+}
+
+export interface PromptVersion {
+  id: string;
+  prompt_id: string;
+  version_number: number;
+  prompt_text: string;
+  optimization_notes?: string;
+  created_at: string;
+}
+
+export interface OptimizationAnalysis {
+  original_prompt: string;
+  optimized_prompt: string;
+  token_count_original: number;
+  token_count_optimized: number;
+  overall_score: number;
+  analyses: {
+    clarity: any;
+    security: any;
+    performance: any;
+    structure: any;
+  };
+  token_savings: number;
+}
+
+export interface PromptListParams {
+  limit?: number;
+  offset?: number;
+  search?: string;
+}
+
+export interface ApiPromptResponse<T = any> {
+  success: boolean;
+  data?: T;
+  message?: string;
+  total?: number;
+  limit?: number;
+  offset?: number;
+}
+
+// Prompt Optimizer API
+export const promptOptimizerApi = {
+  // Create a new prompt
+  createPrompt: async (promptData: PromptCreate): Promise<ApiPromptResponse<Prompt>> => {
+    try {
+      const response = await api.post('/prompt-optimizer/prompts', promptData);
+      return response.data;
+    } catch (error) {
+      console.error('Error creating prompt:', error);
+      throw error;
+    }
+  },
+
+  // Get all prompts for the user
+  getPrompts: async (params: PromptListParams = {}): Promise<ApiPromptResponse<Prompt[]>> => {
+    try {
+      const response = await api.get('/prompt-optimizer/prompts', { params });
+      return response.data;
+    } catch (error) {
+      console.error('Error fetching prompts:', error);
+      throw error;
+    }
+  },
+
+  // Get a specific prompt by ID
+  getPrompt: async (promptId: string): Promise<ApiPromptResponse<Prompt>> => {
+    try {
+      const response = await api.get(`/prompt-optimizer/prompts/${promptId}`);
+      return response.data;
+    } catch (error) {
+      console.error(`Error fetching prompt ${promptId}:`, error);
+      throw error;
+    }
+  },
+
+  // Update an existing prompt
+  updatePrompt: async (promptId: string, updates: PromptUpdate): Promise<ApiPromptResponse<Prompt>> => {
+    try {
+      const response = await api.put(`/prompt-optimizer/prompts/${promptId}`, updates);
+      return response.data;
+    } catch (error) {
+      console.error(`Error updating prompt ${promptId}:`, error);
+      throw error;
+    }
+  },
+
+  // Delete a prompt
+  deletePrompt: async (promptId: string): Promise<ApiPromptResponse> => {
+    try {
+      const response = await api.delete(`/prompt-optimizer/prompts/${promptId}`);
+      return response.data;
+    } catch (error) {
+      console.error(`Error deleting prompt ${promptId}:`, error);
+      throw error;
+    }
+  },
+
+  // Optimize a prompt using AI
+  optimizePrompt: async (promptId: string): Promise<ApiPromptResponse<OptimizationAnalysis>> => {
+    try {
+      const response = await api.post(`/prompt-optimizer/prompts/${promptId}/optimize`);
+      return response.data;
+    } catch (error) {
+      console.error(`Error optimizing prompt ${promptId}:`, error);
+      throw error;
+    }
+  },
+
+  // Quick analysis without saving
+  analyzePrompt: async (promptText: string): Promise<ApiPromptResponse<OptimizationAnalysis>> => {
+    try {
+      const response = await api.post('/prompt-optimizer/analyze', null, {
+        params: { prompt_text: promptText }
+      });
+      return response.data;
+    } catch (error) {
+      console.error('Error analyzing prompt:', error);
+      throw error;
+    }
+  },
+
+  // Get version history for a prompt
+  getPromptVersions: async (promptId: string): Promise<ApiPromptResponse<PromptVersion[]>> => {
+    try {
+      const response = await api.get(`/prompt-optimizer/prompts/${promptId}/versions`);
+      return response.data;
+    } catch (error) {
+      console.error(`Error fetching versions for prompt ${promptId}:`, error);
+      throw error;
+    }
+  },
+
+  // Export optimization results
+  exportOptimization: async (promptId: string, format: 'json' | 'txt' = 'json'): Promise<boolean> => {
+    try {
+      const promptResponse = await promptOptimizerApi.getPrompt(promptId);
+      const prompt = promptResponse.data;
+
+      if (!prompt) {
+        throw new Error('Prompt not found');
+      }
+
+      const exportData = {
+        prompt: {
+          title: prompt.title,
+          original_prompt: prompt.original_prompt,
+          optimized_prompt: prompt.optimized_prompt,
+          created_at: prompt.created_at
+        },
+        optimization_results: prompt.optimization_results || []
+      };
+
+      // Create and download file
+      const dataStr = format === 'json'
+        ? JSON.stringify(exportData, null, 2)
+        : `Title: ${prompt.title}\n\nOriginal Prompt:\n${prompt.original_prompt}\n\nOptimized Prompt:\n${prompt.optimized_prompt}`;
+
+      const dataBlob = new Blob([dataStr], { type: format === 'json' ? 'application/json' : 'text/plain' });
+      const url = window.URL.createObjectURL(dataBlob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.setAttribute('download', `prompt-optimization-${promptId}.${format}`);
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      window.URL.revokeObjectURL(url);
+
+      return true;
+    } catch (error) {
+      console.error(`Error exporting optimization for prompt ${promptId}:`, error);
+      throw error;
+    }
+  }
+};
+
+// Add this to your existing export at the bottom of api.ts
+// export { promptOptimizerApi };
 export default api;

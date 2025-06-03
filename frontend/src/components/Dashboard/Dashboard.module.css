@@ -1,3 +1,5 @@
+/* Dashboard.module.css */
+
 .dashboard {
   display: grid;
   grid-template-areas:
@@ -7,7 +9,6 @@
   grid-template-rows: 60px auto;
   height: 100vh;
   overflow: hidden;
-  /* Add this */
 }
 
 /* Header */
@@ -32,6 +33,7 @@
   padding: 15px 20px;
   color: white;
   cursor: pointer;
+  transition: background-color 0.2s ease;
 }
 
 .navItem .icon {
@@ -42,8 +44,10 @@
   display: flex;
   justify-content: center;
   align-items: center;
+  position: relative;
 }
 
+/* Upload Documents Icon */
 .navItem .icon .arrowUp {
   width: 8px;
   height: 8px;
@@ -52,17 +56,55 @@
   transform: rotate(-45deg);
 }
 
+/* My Documents Icon */
 .navItem .icon .box {
   width: 10px;
   height: 10px;
   border: 2px solid white;
 }
 
+/* Chat Assistant Icon */
 .navItem .icon .chat {
   width: 6px;
   height: 6px;
   border-radius: 50%;
   border: 2px solid white;
+}
+
+/* NEW: Prompt Optimizer Icon */
+.navItem .icon .optimizer {
+  width: 12px;
+  height: 12px;
+  border: 2px solid white;
+  border-radius: 2px;
+  position: relative;
+}
+
+.navItem .icon .optimizer::before {
+  content: '';
+  position: absolute;
+  top: 2px;
+  left: 2px;
+  width: 4px;
+  height: 4px;
+  background: white;
+  border-radius: 1px;
+}
+
+.navItem .icon .optimizer::after {
+  content: '';
+  position: absolute;
+  top: 2px;
+  right: 1px;
+  width: 2px;
+  height: 2px;
+  background: white;
+  border-radius: 50%;
+}
+
+/* Extractions Icon */
+.navItem .icon .cross {
+  position: relative;
 }
 
 .navItem .icon .cross::before,
@@ -77,9 +119,22 @@
   transform-origin: center;
 }
 
+.navItem .icon .cross::before {
+  transform: translate(-50%, -50%) rotate(45deg);
+}
+
+.navItem .icon .cross::after {
+  transform: translate(-50%, -50%) rotate(-45deg);
+}
+
+/* Navigation Hover and Active States */
 .navItem:hover,
 .navItem.active {
   background-color: #34495e;
+}
+
+.navItem.active {
+  background-color: #5d4cff;
 }
 
 /* Main Content */
@@ -88,17 +143,16 @@
   display: flex;
   flex-direction: column;
   height: 100%;
-  /* Take remaining grid height */
   overflow: hidden;
-  /* Block page scroll */
-  padding: 0;
-  /* Prevent layout shift */
+  padding: 20px;
+  background-color: #f8f9fa;
 }
 
-
+/* Stats Section */
 .stats {
   display: flex;
   gap: 20px;
+  margin-bottom: 20px;
 }
 
 .statBox {
@@ -106,43 +160,98 @@
   background-color: white;
   padding: 20px;
   border: 1px solid #ddd;
-  border-radius: 5px;
+  border-radius: 8px;
   text-align: center;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
 }
 
 .statBox p {
   color: #666;
   margin: 0;
+  font-size: 14px;
 }
 
 .statBox h2 {
   margin: 10px 0 0;
-  font-size: 24px;
+  font-size: 28px;
+  font-weight: 700;
+  color: #2c3e50;
 }
 
+/* Recent Activity Section */
 .recentActivity {
-  margin-top: 20px;
+  flex: 1;
 }
 
 .recentActivity h3 {
-  margin-bottom: 10px;
+  margin-bottom: 16px;
+  color: #2c3e50;
+  font-size: 20px;
+  font-weight: 600;
 }
 
 .activityList {
   background-color: white;
   border: 1px solid #ddd;
   padding: 20px;
-  border-radius: 5px;
+  border-radius: 8px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  height: 100%;
+  overflow-y: auto;
 }
 
 .activityItem {
-  margin-bottom: 20px;
+  margin-bottom: 16px;
+  padding-bottom: 16px;
+  border-bottom: 1px solid #f0f0f0;
+}
+
+.activityItem:last-child {
+  margin-bottom: 0;
+  padding-bottom: 0;
+  border-bottom: none;
 }
 
 .activityItem p {
-  margin: 0;
+  margin: 0 0 4px 0;
+  color: #2c3e50;
+  font-weight: 500;
 }
 
 .activityItem small {
   color: #666;
+  font-size: 12px;
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+  .dashboard {
+    grid-template-columns: 60px 1fr;
+  }
+
+  .sidebar {
+    padding: 10px 0;
+  }
+
+  .navItem {
+    padding: 15px 10px;
+    justify-content: center;
+  }
+
+  .navItem span {
+    display: none;
+  }
+
+  .navItem .icon {
+    margin-right: 0;
+  }
+
+  .stats {
+    flex-direction: column;
+    gap: 10px;
+  }
+
+  .mainContent {
+    padding: 10px;
+  }
 }
