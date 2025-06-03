@@ -120,3 +120,109 @@ async def search_document_embeddings(query_embedding, match_threshold=0.7, limit
     ).execute()
 
     return result.data
+
+# Prompt Optimizer Database Operations
+
+async def create_prompt(prompt_data):
+    """Create a new prompt record"""
+    result = supabase.table("prompt_optimizer_prompts").insert(prompt_data).execute()
+    return result.data[0] if result.data else None
+
+async def get_prompt(prompt_id, user_id):
+    """Get a prompt by ID for specific user"""
+    result = supabase.table("prompt_optimizer_prompts")\
+        .select("*")\
+        .eq("id", prompt_id)\
+        .eq("user_id", user_id)\
+        .execute()
+    return result.data[0] if result.data else None
+
+async def get_user_prompts(user_id, limit=20, offset=0, search=None):
+    """Get prompts for a user with pagination and search"""
+    query = supabase.table("prompt_optimizer_prompts")\
+        .select("*", count="exact")\
+        .eq("user_id", user_id)
+
+    # Add search filter if provided
+    if search:
+        query = query.or_(f"title.ilike.%{search}%,original_prompt.ilike.%{search}%")
+
+    # Add sorting and pagination
+    query = query.order("updated_at", desc=True)\
+        .range(offset, offset + limit - 1)
+
+    result = query.execute()
+    return {
+        "data": result.data,
+        "count": result.count
+    }
+
+async def update_prompt(prompt_id, user_id, prompt_data):
+    """Update a prompt by ID"""
+    # Add updated_at timestamp
+    prompt_data["updated_at"] = "now()"
+
+    result = supabase.table("prompt_optimizer_prompts")\
+        .update(prompt_data)\
+        .eq("id", prompt_id)\
+        .eq("user_id", user_id)\
+        .execute()
+    return result.data[0] if result.data else None
+
+async def delete_prompt(prompt_id, user_id):
+    """Delete a prompt by ID"""
+    result = supabase.table("prompt_optimizer_prompts")\
+        .delete()\
+        .eq("id", prompt_id)\
+        .eq("user_id", user_id)\
+        .execute()
+    return result.data[0] if result.data else None
+
+# Optimization Results Operations
+async def store_optimization_results(optimization_data):
+    """Store optimization analysis results"""
+    result = supabase.table("prompt_optimization_results").insert(optimization_data).execute()
+    return result.data[0] if result.data else None
+
+async def get_optimization_results(prompt_id):
+    """Get all optimization results for a prompt"""
+    result = supabase.table("prompt_optimization_results")\
+        .select("*")\
+        .eq("prompt_id", prompt_id)\
+        .order("created_at", desc=True)\
+        .execute()
+    return result.data
+
+# Version History Operations
+async def create_prompt_version(version_data):
+    """Create a new version of a prompt"""
+    result = supabase.table("prompt_versions").insert(version_data).execute()
+    return result.data[0] if result.data else None
+
+async def get_prompt_versions(prompt_id):
+    """Get version history for a prompt"""
+    result = supabase.table("prompt_versions")\
+        .select("*")\
+        .eq("prompt_id", prompt_id)\
+        .order("version_number", desc=True)\
+        .execute()
+    return result.data
+
+# Template Operations (for future use)
+async def get_prompt_templates(category=None, is_public=True):
+    """Get prompt templates"""
+    query = supabase.table("prompt_templates").select("*")
+
+    if is_public:
+        query = query.eq("is_public", True)
+
+    if category:
+        query = query.eq("category", category)
+
+    result = query.order("usage_count", desc=True).execute()
+    return result.data
+
+async def create_prompt_template(template_data):
+    """Create a new prompt template"""
+    result = supabase.table("prompt_templates").insert(template_data).execute()
+    return result.data[0] if result.data else None
