@@ -1,4 +1,4 @@
-// Corrected Dashboard.tsx
+// Complete Debug Dashboard.tsx
 import { useRouter } from "next/router";
 import React from "react";
 import styles from "./Dashboard.module.css";
@@ -7,6 +7,7 @@ const Dashboard: React.FC = () => {
   const router = useRouter();
 
   const navigateTo = (path: string) => {
+    console.log('Navigating to:', path); // Debug log
     router.push(path);
   };
 
@@ -22,9 +23,21 @@ const Dashboard: React.FC = () => {
         <h1>Document Management Dashboard</h1>
       </header>
 
-      {/* Sidebar */}
+      {/* Sidebar - FULL DEBUG VERSION */}
       <aside className={styles.sidebar}>
-        {/* Navigation */}
+
+        {/* Test Item 1 - Should always be visible */}
+        <div style={{
+          padding: '15px 20px',
+          backgroundColor: 'blue',
+          color: 'white',
+          margin: '5px',
+          border: '2px solid white'
+        }}>
+          TEST 1 - BLUE
+        </div>
+
+        {/* Original Upload Documents */}
         <div
           className={`${styles.navItem} ${isActive("/upload") ? styles.active : ""}`}
           onClick={() => navigateTo("/upload")}
@@ -35,6 +48,18 @@ const Dashboard: React.FC = () => {
           <span>Upload Documents</span>
         </div>
 
+        {/* Test Item 2 - Between original items */}
+        <div style={{
+          padding: '15px 20px',
+          backgroundColor: 'green',
+          color: 'white',
+          margin: '5px',
+          border: '2px solid white'
+        }}>
+          TEST 2 - GREEN
+        </div>
+
+        {/* Original My Documents */}
         <div
           className={`${styles.navItem} ${isActive("/invoices") ? styles.active : ""}`}
           onClick={() => navigateTo("/invoices")}
@@ -45,6 +70,22 @@ const Dashboard: React.FC = () => {
           <span>My Documents</span>
         </div>
 
+        {/* Test Item 3 - Red Prompt Optimizer */}
+        <div
+          style={{
+            padding: '15px 20px',
+            backgroundColor: 'red',
+            color: 'yellow',
+            margin: '5px',
+            border: '3px solid lime',
+            cursor: 'pointer'
+          }}
+          onClick={() => navigateTo("/eu_act/prompt-optimizer")}
+        >
+          🔴 PROMPT OPTIMIZER CLICK ME
+        </div>
+
+        {/* Original Chat */}
         <div
           className={`${styles.navItem} ${isActive("/chat") ? styles.active : ""}`}
           onClick={() => navigateTo("/chat")}
@@ -55,63 +96,26 @@ const Dashboard: React.FC = () => {
           <span>Chat Assistant</span>
         </div>
 
-        {/* TEMPORARY DEBUG: Prompt Optimizer Navigation Item */}
-        <div
-          className={styles.navItem}
-          onClick={() => navigateTo("/eu_act/prompt-optimizer")}
-          style={{
-            backgroundColor: 'red !important',
-            color: 'yellow !important',
-            border: '3px solid lime !important',
-            margin: '10px 0 !important'
-          }}
-        >
-          <div className={styles.icon}>
-            <div style={{
-              width: '15px',
-              height: '15px',
-              backgroundColor: 'yellow',
-              borderRadius: '50%'
-            }}></div>
-          </div>
-          <span style={{ color: 'yellow', fontWeight: 'bold' }}>
-            🔴 PROMPT OPTIMIZER
-          </span>
+        {/* Test Item 4 - Bottom test */}
+        <div style={{
+          padding: '15px 20px',
+          backgroundColor: 'purple',
+          color: 'white',
+          margin: '5px',
+          border: '2px solid white'
+        }}>
+          TEST 4 - PURPLE
         </div>
 
+        {/* Original Extractions */}
         <div className={styles.navItem}>
           <div className={styles.icon}>
             <div className={styles.cross}></div>
           </div>
           <span>Extractions</span>
         </div>
+
       </aside>
-
-
-      {/* ADD THE DEBUG ITEM HERE - AFTER Extractions */}
-      <div
-        className={styles.navItem}
-        onClick={() => navigateTo("/eu_act/prompt-optimizer")}
-        style={{
-          backgroundColor: 'red !important',
-          color: 'yellow !important',
-          border: '3px solid lime !important',
-          margin: '10px 0 !important'
-        }}
-      >
-        <div className={styles.icon}>
-          <div style={{
-            width: '15px',
-            height: '15px',
-            backgroundColor: 'yellow',
-            borderRadius: '50%'
-          }}></div>
-        </div>
-        <span style={{ color: 'yellow', fontWeight: 'bold' }}>
-          🔴 PROMPT OPTIMIZER
-        </span>
-      </div>
-
 
       {/* Main Content */}
       <main className={styles.mainContent}>

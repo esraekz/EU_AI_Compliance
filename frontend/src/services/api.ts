@@ -101,16 +101,21 @@ api.interceptors.request.use((config) => {
 // Invoice API functions
 export const invoiceApi = {
     // Get all invoices with optional filtering
-  getInvoices: async (params: InvoiceListParams = {}): Promise<ApiResponse<{ invoices: Invoice[]; total: number }>> => {
-    try {
-      // Use this URL path for invoice endpoints
-      const response = await axios.get('http://localhost:8000/invoices', { params });
-      return response.data;
-    } catch (error) {
-      console.error('Error fetching invoices:', error);
-      throw error;
-    }
-  },
+    getInvoices: async (params: InvoiceListParams = {}): Promise<ApiResponse<{ invoices: Invoice[]; total: number }>> => {
+      try {
+        console.log('Fetching invoices from:', 'http://localhost:8000/invoices'); // Debug log
+        const response = await axios.get('http://localhost:8000/invoices', { params });
+        return response.data;
+      } catch (error) {
+        console.error('Error fetching invoices:', error);
+        // Return empty state instead of throwing
+        return {
+          success: false,
+          data: { invoices: [], total: 0 },
+          message: 'Failed to load documents'
+        };
+      }
+    },
 
   // Get single invoice by ID
   getInvoice: async (id: string): Promise<ApiResponse<Invoice>> => {
@@ -509,8 +514,8 @@ export const promptOptimizerApi = {
   // Quick analysis without saving
   analyzePrompt: async (promptText: string): Promise<ApiPromptResponse<OptimizationAnalysis>> => {
     try {
-      const response = await api.post('/prompt-optimizer/analyze', null, {
-        params: { prompt_text: promptText }
+      const response = await api.post('/prompt-optimizer/analyze', {
+        prompt_text: promptText  // Send in body, not query params
       });
       return response.data;
     } catch (error) {

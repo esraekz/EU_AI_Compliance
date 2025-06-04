@@ -1,28 +1,176 @@
-// pages/eu_act/prompt-optimizer.tsx - Dashboard integrated version
+// pages/eu_act/prompt-optimizer.tsx - Standalone Version
 import { useRouter } from 'next/router';
 import React, { useEffect, useState } from 'react';
-import { OptimizationAnalysis, Prompt, promptOptimizerApi } from '../../services/api';
+
+// Inline type definitions to avoid import issues
+interface OptimizationAnalysis {
+    original_prompt: string;
+    optimized_prompt: string;
+    token_count_original: number;
+    token_count_optimized: number;
+    overall_score: number;
+    analyses: {
+        clarity?: any;
+        security?: any;
+        performance?: any;
+        structure?: any;
+    };
+    token_savings?: number;
+}
+
+interface Prompt {
+    id: string;
+    user_id: string;
+    title: string;
+    original_prompt: string;
+    optimized_prompt?: string;
+    status: 'draft' | 'optimized' | 'archived';
+    tags?: string[];
+    created_at: string;
+    updated_at: string;
+}
+
+interface ApiPromptResponse<T = any> {
+    success: boolean;
+    data?: T;
+    message?: string;
+    total?: number;
+    limit?: number;
+    offset?: number;
+}
+
+// Inline API functions to avoid import issues
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
+
+const promptOptimizerApi = {
+    createPrompt: async (promptData: { title?: string; original_prompt: string; tags?: string[] }): Promise<ApiPromptResponse<Prompt>> => {
+        try {
+            const response = await fetch(`${API_BASE_URL}/prompt-optimizer/prompts`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(promptData),
+            });
+            return await response.json();
+        } catch (error) {
+            console.error('Error creating prompt:', error);
+            throw error;
+        }
+    },
+
+    getPrompts: async (params: { limit?: number; offset?: number; search?: string } = {}): Promise<ApiPromptResponse<Prompt[]>> => {
+        try {
+            const searchParams = new URLSearchParams();
+            if (params.limit) searchParams.set('limit', params.limit.toString());
+            if (params.offset) searchParams.set('offset', params.offset.toString());
+            if (params.search) searchParams.set('search', params.search);
+
+            const query = searchParams.toString();
+            const url = `${API_BASE_URL}/prompt-optimizer/prompts${query ? `?${query}` : ''}`;
+
+            const response = await fetch(url);
+            return await response.json();
+        } catch (error) {
+            console.error('Error fetching prompts:', error);
+            throw error;
+        }
+    },
+
+    optimizePrompt: async (promptId: string): Promise<ApiPromptResponse<OptimizationAnalysis>> => {
+        try {
+            const response = await fetch(`${API_BASE_URL}/prompt-optimizer/prompts/${promptId}/optimize`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+            });
+            return await response.json();
+        } catch (error) {
+            console.error('Error optimizing prompt:', error);
+            throw error;
+        }
+    },
+
+    analyzePrompt: async (promptText: string): Promise<ApiPromptResponse<OptimizationAnalysis>> => {
+        try {
+            const response = await fetch(`${API_BASE_URL}/prompt-optimizer/analyze`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ prompt_text: promptText }),
+            });
+            return await response.json();
+        } catch (error) {
+            console.error('Error analyzing prompt:', error);
+            throw error;
+        }
+    },
+};
+
+// Simple Layout Component
+interface LayoutProps {
+    children: React.ReactNode;
+}
+
+const SimpleLayout: React.FC<LayoutProps> = ({ children }) => {
+    return (
+        <div style={{
+            display: 'flex',
+            flexDirection: 'column',
+            height: '100vh',
+            backgroundColor: '#f5f7fa'
+        }}>
+            <header style={{
+                height: '60px',
+                backgroundColor: '#5d4cff',
+                color: 'white',
+                display: 'flex',
+                alignItems: 'center',
+                paddingLeft: '20px',
+                fontSize: '20px',
+                fontWeight: 'bold'
+            }}>
+                ZOKU - Prompt Optimizer
+            </header>
+            <main style={{ flex: 1, overflow: 'auto' }}>
+                {children}
+            </main>
+        </div>
+    );
+};
+
+interface OptimizationGoals {
+    improve_clarity: boolean;
+    add_specificity: boolean;
+    better_structure: boolean;
+    add_examples: boolean;
+}
 
 const PromptOptimizerPage: React.FC = () => {
     const router = useRouter();
+    const [isClient, setIsClient] = useState(false);
 
     // State management
-    const [activeTab, setActiveTab] = useState<'new' | 'saved'>('new');
     const [inputPrompt, setInputPrompt] = useState('');
     const [promptTitle, setPromptTitle] = useState('');
+    const [targetModel, setTargetModel] = useState('GPT-4');
+    const [industry, setIndustry] = useState('Technology');
+    const [optimizationGoals, setOptimizationGoals] = useState<OptimizationGoals>({
+        improve_clarity: true,
+        add_specificity: true,
+        better_structure: false,
+        add_examples: false
+    });
     const [optimizationResult, setOptimizationResult] = useState<OptimizationAnalysis | null>(null);
     const [savedPrompts, setSavedPrompts] = useState<Prompt[]>([]);
-    const [selectedPrompt, setSelectedPrompt] = useState<Prompt | null>(null);
     const [isLoading, setIsLoading] = useState(false);
     const [isAnalyzing, setIsAnalyzing] = useState(false);
     const [error, setError] = useState<string | null>(null);
     const [success, setSuccess] = useState<string | null>(null);
 
-    // Load saved prompts when component mounts
+    // Handle client-side hydration
     useEffect(() => {
+        setIsClient(true);
         loadSavedPrompts();
     }, []);
 
+    // Load saved prompts when component mounts
     const loadSavedPrompts = async () => {
         try {
             const response = await promptOptimizerApi.getPrompts({ limit: 50 });
@@ -49,17 +197,19 @@ const PromptOptimizerPage: React.FC = () => {
             const response = await promptOptimizerApi.analyzePrompt(inputPrompt);
             if (response.success && response.data) {
                 setOptimizationResult(response.data);
+                setSuccess('Prompt analyzed successfully!');
             }
         } catch (error) {
-            setError('Failed to analyze prompt. Please try again.');
+            setError('Failed to analyze prompt. Please check if your backend is running.');
+            console.error('Analysis error:', error);
         } finally {
             setIsAnalyzing(false);
         }
     };
 
-    const handleSaveAndOptimize = async () => {
+    const handleOptimizePrompt = async () => {
         if (!inputPrompt.trim()) {
-            setError('Please enter a prompt to save and optimize');
+            setError('Please enter a prompt to optimize');
             return;
         }
 
@@ -78,12 +228,13 @@ const PromptOptimizerPage: React.FC = () => {
 
                 if (optimizeResponse.success && optimizeResponse.data) {
                     setOptimizationResult(optimizeResponse.data);
-                    setSuccess('Prompt saved and optimized successfully!');
+                    setSuccess('Prompt optimized and saved successfully!');
                     await loadSavedPrompts();
                 }
             }
         } catch (error) {
-            setError('Failed to save and optimize prompt. Please try again.');
+            setError('Failed to optimize prompt. Please check if your backend is running.');
+            console.error('Optimization error:', error);
         } finally {
             setIsLoading(false);
         }
@@ -93,7 +244,6 @@ const PromptOptimizerPage: React.FC = () => {
         setInputPrompt('');
         setPromptTitle('');
         setOptimizationResult(null);
-        setSelectedPrompt(null);
         setError(null);
         setSuccess(null);
     };
@@ -104,57 +254,144 @@ const PromptOptimizerPage: React.FC = () => {
         return '#ef4444';
     };
 
-    const getScoreLabel = (score: number) => {
-        if (score >= 0.8) return 'Excellent';
-        if (score >= 0.6) return 'Good';
-        if (score >= 0.4) return 'Fair';
-        return 'Needs Improvement';
-    };
+    const getScorePercentage = (score: number) => Math.round(score * 100);
 
-    // Dashboard-compatible styles
     const styles = {
         container: {
-            padding: '20px',
-            maxWidth: '100%',
-            height: '100%',
-            overflowY: 'auto' as const,
-            backgroundColor: '#f8f9fa'
+            padding: '24px',
+            maxWidth: '1400px',
+            margin: '0 auto'
         },
         header: {
-            textAlign: 'center' as const,
+            background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+            padding: '24px',
+            color: 'white',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            marginBottom: '24px',
+            borderRadius: '12px'
+        },
+        headerContent: {
+            display: 'flex',
+            alignItems: 'center',
+            gap: '16px'
+        },
+        headerTitle: {
+            fontSize: '24px',
+            fontWeight: '700',
+            margin: 0
+        },
+        headerSubtitle: {
+            fontSize: '14px',
+            opacity: 0.9,
+            margin: '4px 0 0 0'
+        },
+        mainGrid: {
+            display: 'grid',
+            gridTemplateColumns: isClient && window.innerWidth > 1200 ? '1fr 400px' : '1fr',
+            gap: '24px'
+        },
+        card: {
+            backgroundColor: 'white',
+            borderRadius: '12px',
+            padding: '24px',
+            boxShadow: '0 1px 3px rgba(0, 0, 0, 0.1)',
             marginBottom: '24px'
         },
-        tabNav: {
-            display: 'flex',
-            backgroundColor: 'white',
-            borderRadius: '8px',
-            padding: '4px',
-            marginBottom: '24px',
-            boxShadow: '0 2px 4px rgba(0, 0, 0, 0.1)'
+        cardTitle: {
+            fontSize: '18px',
+            fontWeight: '600',
+            color: '#1f2937',
+            margin: '0 0 20px 0'
         },
-        tab: {
-            flex: 1,
-            padding: '12px 24px',
-            background: 'none' as const,
-            border: 'none',
-            borderRadius: '6px',
+        formGroup: {
+            marginBottom: '20px'
+        },
+        label: {
+            display: 'block',
             fontSize: '14px',
-            fontWeight: '500' as const,
-            cursor: 'pointer' as const,
-            transition: 'all 0.2s ease'
+            fontWeight: '600',
+            color: '#374151',
+            marginBottom: '8px'
         },
-        activeTab: {
-            backgroundColor: '#5d4cff',
-            color: 'white'
+        textarea: {
+            width: '100%',
+            minHeight: '120px',
+            padding: '16px',
+            border: '2px solid #e5e7eb',
+            borderRadius: '8px',
+            fontSize: '14px',
+            fontFamily: 'SF Mono, Monaco, Consolas, monospace',
+            lineHeight: '1.5',
+            resize: 'vertical' as const,
+            boxSizing: 'border-box' as const,
+            transition: 'border-color 0.2s ease'
         },
-        inactiveTab: {
-            color: '#6b7280'
+        input: {
+            width: '100%',
+            padding: '12px 16px',
+            border: '2px solid #e5e7eb',
+            borderRadius: '8px',
+            fontSize: '14px',
+            boxSizing: 'border-box' as const
+        },
+        select: {
+            width: '100%',
+            padding: '12px 16px',
+            border: '2px solid #e5e7eb',
+            borderRadius: '8px',
+            fontSize: '14px',
+            backgroundColor: 'white',
+            boxSizing: 'border-box' as const
+        },
+        formRow: {
+            display: 'grid',
+            gridTemplateColumns: '1fr 1fr',
+            gap: '16px'
+        },
+        primaryButton: {
+            width: '100%',
+            padding: '16px',
+            backgroundColor: '#667eea',
+            color: 'white',
+            border: 'none',
+            borderRadius: '8px',
+            fontSize: '16px',
+            fontWeight: '600',
+            cursor: 'pointer',
+            transition: 'background-color 0.2s ease',
+            marginBottom: '12px'
+        },
+        secondaryButton: {
+            width: '100%',
+            padding: '12px',
+            backgroundColor: '#f3f4f6',
+            color: '#374151',
+            border: '1px solid #d1d5db',
+            borderRadius: '8px',
+            fontSize: '14px',
+            fontWeight: '600',
+            cursor: 'pointer'
+        },
+        clearButton: {
+            width: '100%',
+            padding: '12px',
+            backgroundColor: '#ef4444',
+            color: 'white',
+            border: 'none',
+            borderRadius: '8px',
+            fontSize: '14px',
+            fontWeight: '600',
+            cursor: 'pointer',
+            marginTop: '12px'
         },
         alert: {
             padding: '12px 16px',
-            borderRadius: '6px',
+            borderRadius: '8px',
             marginBottom: '20px',
-            fontWeight: '500' as const
+            fontSize: '14px',
+            fontWeight: '500'
         },
         errorAlert: {
             backgroundColor: '#fef2f2',
@@ -166,387 +403,237 @@ const PromptOptimizerPage: React.FC = () => {
             color: '#16a34a',
             border: '1px solid #bbf7d0'
         },
-        inputSection: {
-            backgroundColor: 'white',
-            borderRadius: '12px',
-            padding: '24px',
-            marginBottom: '24px',
-            boxShadow: '0 4px 12px rgba(0, 0, 0, 0.05)'
+        scoreCircle: {
+            width: '120px',
+            height: '120px',
+            borderRadius: '50%',
+            display: 'flex',
+            flexDirection: 'column' as const,
+            alignItems: 'center',
+            justifyContent: 'center',
+            margin: '0 auto 20px',
+            backgroundColor: '#f3f4f6'
         },
-        label: {
-            display: 'block',
-            fontWeight: '600' as const,
-            color: '#374151',
-            marginBottom: '8px'
+        scoreValue: {
+            fontSize: '36px',
+            fontWeight: '700',
+            lineHeight: '1'
         },
-        input: {
-            width: '100%',
-            padding: '12px 16px',
-            border: '2px solid #e5e7eb',
+        scoreLabel: {
+            fontSize: '12px',
+            color: '#6b7280',
+            marginTop: '4px'
+        },
+        resultBox: {
+            backgroundColor: '#f8f9fa',
+            border: '1px solid #e5e7eb',
             borderRadius: '8px',
-            fontSize: '16px',
-            marginBottom: '16px',
-            boxSizing: 'border-box' as const
-        },
-        textarea: {
-            width: '100%',
             padding: '16px',
-            border: '2px solid #e5e7eb',
-            borderRadius: '8px',
-            fontSize: '16px',
+            fontSize: '14px',
             fontFamily: 'SF Mono, Monaco, Consolas, monospace',
             lineHeight: '1.5',
-            resize: 'vertical' as const,
-            minHeight: '200px',
-            marginBottom: '20px',
-            boxSizing: 'border-box' as const
-        },
-        buttonGroup: {
-            display: 'flex',
-            gap: '12px',
-            flexWrap: 'wrap' as const
-        },
-        button: {
-            padding: '12px 24px',
-            border: 'none',
-            borderRadius: '8px',
-            fontSize: '14px',
-            fontWeight: '600' as const,
-            cursor: 'pointer' as const,
-            transition: 'all 0.2s ease'
-        },
-        analyzeBtn: {
-            backgroundColor: '#f3f4f6',
-            color: '#374151',
-            border: '1px solid #d1d5db'
-        },
-        optimizeBtn: {
-            backgroundColor: '#5d4cff',
-            color: 'white'
-        },
-        clearBtn: {
-            backgroundColor: '#ef4444',
-            color: 'white'
+            color: '#1f2937',
+            maxHeight: '200px',
+            overflowY: 'auto' as const,
+            whiteSpace: 'pre-wrap' as const,
+            marginTop: '12px'
         }
     };
 
     return (
-        <div style={styles.container}>
-            {/* Header */}
-            <div style={styles.header}>
-                <h1 style={{ fontSize: '32px', fontWeight: '700', color: '#252a31', marginBottom: '8px', margin: 0 }}>
-                    Prompt Optimizer
-                </h1>
-                <p style={{ fontSize: '16px', color: '#6b7280', margin: '8px 0 0 0' }}>
-                    Analyze and improve your AI prompts with professional-grade optimization
-                </p>
-            </div>
-
-            {/* Tab Navigation */}
-            <div style={styles.tabNav}>
-                <button
-                    style={{
-                        ...styles.tab,
-                        ...(activeTab === 'new' ? styles.activeTab : styles.inactiveTab)
-                    }}
-                    onClick={() => setActiveTab('new')}
-                >
-                    New Optimization
-                </button>
-                <button
-                    style={{
-                        ...styles.tab,
-                        ...(activeTab === 'saved' ? styles.activeTab : styles.inactiveTab)
-                    }}
-                    onClick={() => setActiveTab('saved')}
-                >
-                    Saved Prompts ({savedPrompts.length})
-                </button>
-            </div>
-
-            {/* Alert Messages */}
-            {error && (
-                <div style={{ ...styles.alert, ...styles.errorAlert }}>
-                    {error}
+        <SimpleLayout>
+            <div style={styles.container}>
+                {/* Header */}
+                <div style={styles.header}>
+                    <div style={styles.headerContent}>
+                        <div>
+                            <h1 style={styles.headerTitle}>Prompt Optimizer</h1>
+                            <p style={styles.headerSubtitle}>Analyze and improve your AI prompts for better results</p>
+                        </div>
+                    </div>
                 </div>
-            )}
-            {success && (
-                <div style={{ ...styles.alert, ...styles.successAlert }}>
-                    {success}
-                </div>
-            )}
 
-            {/* Main Content */}
-            {activeTab === 'new' ? (
-                <>
-                    {/* Input Section */}
-                    <div style={styles.inputSection}>
-                        <label style={styles.label}>Prompt Title (Optional)</label>
-                        <input
-                            type="text"
-                            value={promptTitle}
-                            onChange={(e) => setPromptTitle(e.target.value)}
-                            placeholder="e.g., Blog Writing Assistant"
-                            style={styles.input}
-                        />
+                {/* Alert Messages */}
+                {error && (
+                    <div style={{ ...styles.alert, ...styles.errorAlert }}>
+                        {error}
+                    </div>
+                )}
+                {success && (
+                    <div style={{ ...styles.alert, ...styles.successAlert }}>
+                        {success}
+                    </div>
+                )}
 
-                        <label style={styles.label}>Your Prompt</label>
-                        <textarea
-                            value={inputPrompt}
-                            onChange={(e) => setInputPrompt(e.target.value)}
-                            placeholder="Paste your prompt here for analysis and optimization..."
-                            style={styles.textarea}
-                        />
+                <div style={styles.mainGrid}>
+                    {/* Left Panel */}
+                    <div>
+                        {/* Prompt Editor */}
+                        <div style={styles.card}>
+                            <h3 style={styles.cardTitle}>✏️ Prompt Editor</h3>
 
-                        <div style={styles.buttonGroup}>
+                            <div style={styles.formGroup}>
+                                <label style={styles.label}>Prompt Title (Optional)</label>
+                                <input
+                                    type="text"
+                                    value={promptTitle}
+                                    onChange={(e) => setPromptTitle(e.target.value)}
+                                    placeholder="e.g., Blog Writing Assistant"
+                                    style={styles.input}
+                                />
+                            </div>
+
+                            <div style={styles.formGroup}>
+                                <label style={styles.label}>Your Prompt</label>
+                                <textarea
+                                    value={inputPrompt}
+                                    onChange={(e) => setInputPrompt(e.target.value)}
+                                    placeholder="Write a blog post about artificial intelligence"
+                                    style={styles.textarea}
+                                />
+                            </div>
+
+                            <div style={styles.formRow}>
+                                <div style={styles.formGroup}>
+                                    <label style={styles.label}>Target Model</label>
+                                    <select
+                                        value={targetModel}
+                                        onChange={(e) => setTargetModel(e.target.value)}
+                                        style={styles.select}
+                                    >
+                                        <option value="GPT-4">GPT-4</option>
+                                        <option value="GPT-3.5">GPT-3.5</option>
+                                        <option value="Claude">Claude</option>
+                                        <option value="Gemini">Gemini</option>
+                                    </select>
+                                </div>
+                                <div style={styles.formGroup}>
+                                    <label style={styles.label}>Industry</label>
+                                    <select
+                                        value={industry}
+                                        onChange={(e) => setIndustry(e.target.value)}
+                                        style={styles.select}
+                                    >
+                                        <option value="Technology">Technology</option>
+                                        <option value="Healthcare">Healthcare</option>
+                                        <option value="Finance">Finance</option>
+                                        <option value="Education">Education</option>
+                                        <option value="Marketing">Marketing</option>
+                                    </select>
+                                </div>
+                            </div>
+
+                            <button
+                                onClick={handleOptimizePrompt}
+                                disabled={isLoading || !inputPrompt.trim()}
+                                style={{
+                                    ...styles.primaryButton,
+                                    opacity: (isLoading || !inputPrompt.trim()) ? 0.6 : 1
+                                }}
+                            >
+                                {isLoading ? '⏳ Optimizing...' : '✨ Save & Optimize Prompt'}
+                            </button>
+
                             <button
                                 onClick={handleQuickAnalyze}
                                 disabled={isAnalyzing || !inputPrompt.trim()}
-                                style={{ ...styles.button, ...styles.analyzeBtn }}
+                                style={{
+                                    ...styles.secondaryButton,
+                                    opacity: (isAnalyzing || !inputPrompt.trim()) ? 0.6 : 1
+                                }}
                             >
-                                {isAnalyzing ? 'Analyzing...' : 'Quick Analyze'}
+                                {isAnalyzing ? '⏳ Analyzing...' : '🔍 Quick Analysis'}
                             </button>
-                            <button
-                                onClick={handleSaveAndOptimize}
-                                disabled={isLoading || !inputPrompt.trim()}
-                                style={{ ...styles.button, ...styles.optimizeBtn }}
-                            >
-                                {isLoading ? 'Optimizing...' : 'Save & Optimize'}
-                            </button>
-                            <button
-                                onClick={clearAll}
-                                style={{ ...styles.button, ...styles.clearBtn }}
-                            >
-                                Clear All
-                            </button>
+
+                            {(optimizationResult || inputPrompt) && (
+                                <button onClick={clearAll} style={styles.clearButton}>
+                                    🗑️ Clear All
+                                </button>
+                            )}
                         </div>
                     </div>
 
-                    {/* Results Section */}
-                    {optimizationResult && (
-                        <div style={{
-                            backgroundColor: 'white',
-                            borderRadius: '12px',
-                            padding: '24px',
-                            boxShadow: '0 4px 12px rgba(0, 0, 0, 0.05)'
-                        }}>
-                            <h2 style={{ fontSize: '24px', fontWeight: '700', color: '#252a31', marginBottom: '24px' }}>
-                                Optimization Results
-                            </h2>
+                    {/* Right Panel */}
+                    <div>
+                        {/* Quality Assessment */}
+                        <div style={styles.card}>
+                            <h3 style={styles.cardTitle}>✅ Quality Assessment</h3>
 
-                            {/* Overall Score */}
-                            <div style={{
-                                display: 'flex',
-                                alignItems: 'center',
-                                gap: '32px',
-                                marginBottom: '32px',
-                                padding: '20px',
-                                backgroundColor: '#f8f9fa',
-                                borderRadius: '12px',
-                                flexWrap: 'wrap'
-                            }}>
-                                <div style={{ textAlign: 'center' }}>
-                                    <div style={{
-                                        fontSize: '48px',
-                                        fontWeight: '700',
-                                        lineHeight: '1',
-                                        color: getScoreColor(optimizationResult.overall_score)
-                                    }}>
-                                        {Math.round(optimizationResult.overall_score * 100)}%
-                                    </div>
-                                    <div style={{ fontSize: '14px', color: '#6b7280', marginTop: '4px' }}>
-                                        {getScoreLabel(optimizationResult.overall_score)}
-                                    </div>
-                                </div>
-                                <div style={{ flex: 1, minWidth: '200px' }}>
-                                    <p style={{ margin: '4px 0', fontSize: '16px', color: '#374151' }}>
-                                        <strong>Original:</strong> {optimizationResult.token_count_original} tokens
-                                    </p>
-                                    <p style={{ margin: '4px 0', fontSize: '16px', color: '#374151' }}>
-                                        <strong>Optimized:</strong> {optimizationResult.token_count_optimized} tokens
-                                    </p>
-                                    <p style={{ margin: '4px 0', fontSize: '16px', color: '#10b981' }}>
-                                        <strong>Savings:</strong> {optimizationResult.token_savings} tokens
-                                    </p>
-                                </div>
-                            </div>
-
-                            {/* Side-by-side Comparison */}
-                            <div style={{
-                                display: 'grid',
-                                gridTemplateColumns: window.innerWidth > 768 ? '1fr 1fr' : '1fr',
-                                gap: '20px',
-                                marginBottom: '32px'
-                            }}>
-                                <div style={{
-                                    backgroundColor: '#f8f9fa',
-                                    borderRadius: '8px',
-                                    padding: '20px',
-                                    border: '2px solid #e5e7eb'
-                                }}>
-                                    <h3 style={{ fontSize: '18px', fontWeight: '600', color: '#374151', marginBottom: '12px' }}>
-                                        Original Prompt
-                                    </h3>
-                                    <div style={{
-                                        fontFamily: 'SF Mono, Monaco, Consolas, monospace',
-                                        fontSize: '14px',
-                                        lineHeight: '1.6',
-                                        color: '#1f2937',
-                                        whiteSpace: 'pre-wrap',
-                                        maxHeight: '300px',
-                                        overflowY: 'auto',
-                                        backgroundColor: 'white',
-                                        padding: '16px',
-                                        borderRadius: '6px',
-                                        border: '1px solid #d1d5db'
-                                    }}>
-                                        {optimizationResult.original_prompt}
-                                    </div>
-                                </div>
-                                <div style={{
-                                    backgroundColor: '#f8f9fa',
-                                    borderRadius: '8px',
-                                    padding: '20px',
-                                    border: '2px solid #e5e7eb'
-                                }}>
-                                    <h3 style={{ fontSize: '18px', fontWeight: '600', color: '#374151', marginBottom: '12px' }}>
-                                        Optimized Prompt
-                                    </h3>
-                                    <div style={{
-                                        fontFamily: 'SF Mono, Monaco, Consolas, monospace',
-                                        fontSize: '14px',
-                                        lineHeight: '1.6',
-                                        color: '#1f2937',
-                                        whiteSpace: 'pre-wrap',
-                                        maxHeight: '300px',
-                                        overflowY: 'auto',
-                                        backgroundColor: 'white',
-                                        padding: '16px',
-                                        borderRadius: '6px',
-                                        border: '1px solid #d1d5db'
-                                    }}>
-                                        {optimizationResult.optimized_prompt}
-                                    </div>
-                                </div>
-                            </div>
-
-                            {/* Analysis Details */}
-                            <div style={{
-                                display: 'grid',
-                                gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))',
-                                gap: '20px'
-                            }}>
-                                {Object.entries(optimizationResult.analyses).map(([type, analysis]: [string, any]) => (
-                                    <div key={type} style={{
-                                        backgroundColor: '#f8f9fa',
-                                        borderRadius: '8px',
-                                        padding: '20px',
-                                        border: '1px solid #e5e7eb'
-                                    }}>
-                                        <h4 style={{ fontSize: '16px', fontWeight: '600', color: '#374151', marginBottom: '12px', textTransform: 'capitalize' }}>
-                                            {type} Analysis
-                                        </h4>
+                            {optimizationResult ? (
+                                <>
+                                    <div
+                                        style={{
+                                            ...styles.scoreCircle,
+                                            background: `conic-gradient(${getScoreColor(optimizationResult.overall_score)} ${optimizationResult.overall_score * 360}deg, #f3f4f6 0deg)`
+                                        }}
+                                    >
                                         <div style={{
-                                            fontSize: '24px',
-                                            fontWeight: '700',
-                                            color: getScoreColor(analysis.score || 0),
-                                            marginBottom: '16px'
+                                            ...styles.scoreValue,
+                                            color: getScoreColor(optimizationResult.overall_score)
                                         }}>
-                                            {Math.round((analysis.score || 0) * 100)}%
+                                            {getScorePercentage(optimizationResult.overall_score)}
                                         </div>
+                                        <div style={styles.scoreLabel}>Score</div>
+                                    </div>
 
-                                        {analysis.issues && analysis.issues.length > 0 && (
-                                            <div style={{ marginTop: '12px' }}>
-                                                <h5 style={{ fontSize: '14px', fontWeight: '600', color: '#6b7280', marginBottom: '8px' }}>
-                                                    Issues Found:
-                                                </h5>
-                                                {analysis.issues.slice(0, 3).map((issue: any, idx: number) => (
-                                                    <div key={idx} style={{ fontSize: '13px', lineHeight: '1.4', marginBottom: '4px', color: '#dc2626' }}>
-                                                        • {issue.description || issue.type}
+                                    {/* Token Information */}
+                                    <div style={{ padding: '16px', backgroundColor: '#f8f9fa', borderRadius: '8px', marginBottom: '16px' }}>
+                                        <h4 style={{ margin: '0 0 12px 0', fontSize: '14px', fontWeight: '600' }}>Token Analysis</h4>
+                                        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px', fontSize: '12px' }}>
+                                            <div>Original: {optimizationResult.token_count_original}</div>
+                                            <div>Optimized: {optimizationResult.token_count_optimized}</div>
+                                            <div style={{ gridColumn: '1 / -1', color: '#10b981', fontWeight: '600' }}>
+                                                Savings: {optimizationResult.token_savings || (optimizationResult.token_count_original - optimizationResult.token_count_optimized)} tokens
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    {/* Analysis Scores */}
+                                    {optimizationResult.analyses && Object.entries(optimizationResult.analyses).length > 0 && (
+                                        <div style={{ marginBottom: '16px' }}>
+                                            <h4 style={{ margin: '0 0 12px 0', fontSize: '14px', fontWeight: '600' }}>Analysis Breakdown</h4>
+                                            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px', fontSize: '12px' }}>
+                                                {Object.entries(optimizationResult.analyses).map(([key, analysis]: [string, any]) => (
+                                                    <div key={key} style={{ display: 'flex', justifyContent: 'space-between' }}>
+                                                        <span style={{ textTransform: 'capitalize' }}>{key}:</span>
+                                                        <span style={{ color: getScoreColor(analysis.score || 0), fontWeight: '600' }}>
+                                                            {getScorePercentage(analysis.score || 0)}%
+                                                        </span>
                                                     </div>
                                                 ))}
                                             </div>
-                                        )}
+                                        </div>
+                                    )}
 
-                                        {analysis.suggestions && analysis.suggestions.length > 0 && (
-                                            <div style={{ marginTop: '12px' }}>
-                                                <h5 style={{ fontSize: '14px', fontWeight: '600', color: '#6b7280', marginBottom: '8px' }}>
-                                                    Suggestions:
-                                                </h5>
-                                                {analysis.suggestions.slice(0, 2).map((suggestion: any, idx: number) => (
-                                                    <div key={idx} style={{ fontSize: '13px', lineHeight: '1.4', marginBottom: '4px', color: '#059669' }}>
-                                                        • {suggestion.improvement || suggestion.suggestion || suggestion.fix}
-                                                    </div>
-                                                ))}
-                                            </div>
-                                        )}
+                                    {/* Results Display */}
+                                    <div>
+                                        <h4 style={{ margin: '0 0 8px 0', fontSize: '14px', fontWeight: '600' }}>Optimized Prompt</h4>
+                                        <div style={styles.resultBox}>
+                                            {optimizationResult.optimized_prompt}
+                                        </div>
                                     </div>
-                                ))}
-                            </div>
-                        </div>
-                    )}
-                </>
-            ) : (
-                /* Saved Prompts Tab */
-                <div style={{
-                    backgroundColor: 'white',
-                    borderRadius: '12px',
-                    padding: '24px',
-                    boxShadow: '0 4px 12px rgba(0, 0, 0, 0.05)'
-                }}>
-                    <h2 style={{ fontSize: '24px', fontWeight: '700', color: '#252a31', marginBottom: '24px' }}>
-                        Your Saved Prompts
-                    </h2>
-                    {savedPrompts.length === 0 ? (
-                        <div style={{ textAlign: 'center', padding: '40px', color: '#6b7280' }}>
-                            <p>No saved prompts yet. Create your first optimization!</p>
-                        </div>
-                    ) : (
-                        <div style={{
-                            display: 'grid',
-                            gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))',
-                            gap: '20px'
-                        }}>
-                            {savedPrompts.map((prompt) => (
-                                <div
-                                    key={prompt.id}
-                                    style={{
-                                        backgroundColor: '#f8f9fa',
-                                        border: '2px solid #e5e7eb',
-                                        borderRadius: '8px',
-                                        padding: '20px',
-                                        cursor: 'pointer'
-                                    }}
-                                >
-                                    <h3 style={{ fontSize: '16px', fontWeight: '600', color: '#374151', marginBottom: '8px' }}>
-                                        {prompt.title}
-                                    </h3>
-                                    <p style={{ fontSize: '14px', color: '#6b7280', lineHeight: '1.4', marginBottom: '12px' }}>
-                                        {prompt.original_prompt.slice(0, 100)}...
-                                    </p>
-                                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                                        <span style={{
-                                            padding: '4px 8px',
-                                            borderRadius: '4px',
-                                            fontSize: '12px',
-                                            fontWeight: '600',
-                                            textTransform: 'uppercase',
-                                            backgroundColor: prompt.status === 'optimized' ? '#d1fae5' : '#f3f4f6',
-                                            color: prompt.status === 'optimized' ? '#065f46' : '#374151'
-                                        }}>
-                                            {prompt.status}
-                                        </span>
-                                        <span style={{ fontSize: '12px', color: '#9ca3af' }}>
-                                            {new Date(prompt.created_at).toLocaleDateString()}
-                                        </span>
-                                    </div>
+                                </>
+                            ) : (
+                                <div style={styles.scoreCircle}>
+                                    <div style={{ ...styles.scoreValue, color: '#9ca3af' }}>--</div>
+                                    <div style={styles.scoreLabel}>Score</div>
                                 </div>
-                            ))}
+                            )}
                         </div>
-                    )}
+
+                        {/* Saved Prompts Info */}
+                        {savedPrompts.length > 0 && (
+                            <div style={styles.card}>
+                                <h3 style={styles.cardTitle}>💾 Saved Prompts</h3>
+                                <p style={{ margin: 0, fontSize: '14px', color: '#6b7280' }}>
+                                    You have {savedPrompts.length} saved prompts.
+                                </p>
+                            </div>
+                        )}
+                    </div>
                 </div>
-            )}
-        </div>
+            </div>
+        </SimpleLayout>
     );
 };
 

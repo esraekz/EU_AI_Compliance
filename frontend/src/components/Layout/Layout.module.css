@@ -1,20 +1,14 @@
-/* Fixed Main Layout.module.css - No Outer Scrolling */
+/* Layout.module.css - Updated with Prompt Optimizer Icon */
 
 .layoutContainer {
   display: flex;
   flex-direction: column;
   height: 100vh;
-  /* Full viewport height */
   max-height: 100vh;
-  /* Never exceed viewport */
   width: 100vw;
-  /* Full viewport width */
   max-width: 100vw;
-  /* Never exceed viewport */
   overflow: hidden;
-  /* Prevent any outer scrolling */
   position: fixed;
-  /* Fix to viewport */
   top: 0;
   left: 0;
 }
@@ -24,16 +18,12 @@
   display: flex;
   width: 100%;
   height: 60px;
-  /* Fixed height */
   background-color: #f5f7fa;
   flex-shrink: 0;
-  /* Never shrink */
   flex-grow: 0;
-  /* Never grow */
   border-bottom: 1px solid #e5e7eb;
   position: relative;
   z-index: 100;
-  /* Above other content */
 }
 
 .logoSection {
@@ -95,13 +85,9 @@
 .mainWrapper {
   display: flex;
   flex: 1;
-  /* Takes remaining space below header */
   height: calc(100vh - 60px);
-  /* Subtract header height */
   max-height: calc(100vh - 60px);
-  /* Never exceed */
   overflow: hidden;
-  /* No outer scrolling */
   position: relative;
 }
 
@@ -115,9 +101,7 @@
   padding: 20px 0;
   position: relative;
   height: 100%;
-  /* Full height of main wrapper */
   flex-shrink: 0;
-  /* Never shrink */
   overflow: hidden;
 }
 
@@ -183,21 +167,33 @@
   background-size: contain;
 }
 
+/* NEW: Prompt Optimizer Icon */
+.promptOptimizerIcon::before {
+  content: "";
+  display: inline-block;
+  width: 24px;
+  height: 24px;
+  background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='%23ffffff' viewBox='0 0 24 24'%3E%3Cpath d='M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5'/%3E%3C/svg%3E") no-repeat center center;
+  background-size: contain;
+}
+
+/* Alternative Prompt Optimizer Icon - Brain/AI themed */
+.promptOptimizerIconAlt::before {
+  content: "";
+  display: inline-block;
+  width: 24px;
+  height: 24px;
+  background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='%23ffffff' viewBox='0 0 24 24'%3E%3Cpath d='M12,2A3,3 0 0,1 15,5V11A3,3 0 0,1 12,14A3,3 0 0,1 9,11V5A3,3 0 0,1 12,2M19,11C19,14.53 16.39,17.44 13,17.93V21H11V17.93C7.61,17.44 5,14.53 5,11H7A5,5 0 0,0 12,16A5,5 0 0,0 17,11H19Z'/%3E%3C/svg%3E") no-repeat center center;
+  background-size: contain;
+}
+
 /* MAIN CONTENT - Takes remaining space in main wrapper */
 .mainContent {
   flex: 1;
-  /* Takes remaining space next to sidebar */
   height: 100%;
-  /* Full height of main wrapper */
   overflow: hidden;
-  /* No outer scrolling */
   background-color: #f5f7fa;
   position: relative;
-}
-
-/* Remove profile container */
-.profileContainer {
-  display: none;
 }
 
 /* Tooltip */
@@ -211,6 +207,8 @@
   font-size: 14px;
   white-space: nowrap;
   z-index: 100;
+  top: 50%;
+  transform: translateY(-50%);
 }
 
 .tooltip::before {
@@ -229,7 +227,6 @@ html,
 body {
   height: 100%;
   overflow: hidden !important;
-  /* Critical: prevent any page scrolling */
   margin: 0;
   padding: 0;
 }
@@ -237,5 +234,34 @@ body {
 #__next {
   height: 100%;
   overflow: hidden !important;
-  /* Critical: prevent Next.js container scrolling */
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+  .mainWrapper {
+    flex-direction: column;
+  }
+
+  .slimSidebar {
+    width: 100%;
+    height: 60px;
+    flex-direction: row;
+    padding: 0;
+  }
+
+  .nav {
+    flex-direction: row;
+    justify-content: space-around;
+    width: 100%;
+  }
+
+  .navItem {
+    height: 60px;
+    width: auto;
+    flex: 1;
+  }
+
+  .tooltip {
+    display: none;
+  }
 }
