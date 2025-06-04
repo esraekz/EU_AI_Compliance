@@ -1,4 +1,4 @@
-# zoku/backend/app/services/prompt_analyzer.py
+# app/services/e_prompt_analyzer.py
 
 import json
 import re

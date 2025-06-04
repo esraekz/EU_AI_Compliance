@@ -1,4 +1,4 @@
-# Update your e_prompt_optimizer.py - Remove authentication dependencies
+# app/routers/e_prompt_optimizer.py
 
 from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel
@@ -15,7 +15,6 @@ from app.db.supabase_client import (
     get_prompt_versions
 )
 from app.services.e_prompt_analyzer import prompt_analyzer
-# Remove this import: from app.auth.auth_handler import get_current_user
 import uuid
 
 router = APIRouter(
@@ -26,8 +25,7 @@ router = APIRouter(
 # Test user - same as your other endpoints
 TEST_USER = {"id": "test-user-esra"}
 
-# ... keep all your Pydantic models the same ...
-
+# Pydantic Models
 class PromptCreate(BaseModel):
     title: Optional[str] = None
     original_prompt: str
@@ -42,6 +40,9 @@ class PromptUpdate(BaseModel):
 
 class PromptOptimizeRequest(BaseModel):
     prompt_id: str
+
+class PromptAnalyzeRequest(BaseModel):
+    prompt_text: str
 
 class PromptResponse(BaseModel):
     id: str
@@ -62,13 +63,12 @@ class OptimizationAnalysisResponse(BaseModel):
     analyses: Dict[str, Any]
     overall_score: float
 
-# Updated API Endpoints - Remove authentication
-
+# API Endpoints
 @router.post("/prompts", response_model=Dict[str, Any])
 async def create_new_prompt(prompt_data: PromptCreate):
     """Create a new prompt"""
     try:
-        user = TEST_USER  # Use test user instead of authentication
+        user = TEST_USER
 
         # Prepare data for database
         db_data = {
@@ -103,7 +103,7 @@ async def get_prompts(
 ):
     """Get user's prompts with pagination and search"""
     try:
-        user = TEST_USER  # Use test user instead of authentication
+        user = TEST_USER
 
         result = await get_user_prompts(
             user_id=user["id"],
@@ -128,7 +128,7 @@ async def get_prompts(
 async def get_single_prompt(prompt_id: str):
     """Get a specific prompt by ID"""
     try:
-        user = TEST_USER  # Use test user instead of authentication
+        user = TEST_USER
 
         result = await get_prompt(prompt_id, user["id"])
 
@@ -156,7 +156,7 @@ async def get_single_prompt(prompt_id: str):
 async def update_existing_prompt(prompt_id: str, prompt_data: PromptUpdate):
     """Update an existing prompt"""
     try:
-        user = TEST_USER  # Use test user instead of authentication
+        user = TEST_USER
 
         # Convert Pydantic model to dict, excluding None values
         update_data = {k: v for k, v in prompt_data.dict().items() if v is not None}
@@ -182,7 +182,7 @@ async def update_existing_prompt(prompt_id: str, prompt_data: PromptUpdate):
 async def delete_existing_prompt(prompt_id: str):
     """Delete a prompt"""
     try:
-        user = TEST_USER  # Use test user instead of authentication
+        user = TEST_USER
 
         result = await delete_prompt(prompt_id, user["id"])
 
@@ -204,7 +204,7 @@ async def delete_existing_prompt(prompt_id: str):
 async def optimize_prompt(prompt_id: str):
     """Optimize a prompt using AI analysis"""
     try:
-        user = TEST_USER  # Use test user instead of authentication
+        user = TEST_USER
 
         # Get the prompt first
         prompt_record = await get_prompt(prompt_id, user["id"])
@@ -270,7 +270,7 @@ async def optimize_prompt(prompt_id: str):
 async def get_prompt_version_history(prompt_id: str):
     """Get version history for a prompt"""
     try:
-        user = TEST_USER  # Use test user instead of authentication
+        user = TEST_USER
 
         # Verify user owns the prompt
         prompt_record = await get_prompt(prompt_id, user["id"])
@@ -291,10 +291,10 @@ async def get_prompt_version_history(prompt_id: str):
         raise HTTPException(status_code=500, detail=f"Error fetching version history: {str(e)}")
 
 @router.post("/analyze", response_model=Dict[str, Any])
-async def analyze_prompt_quick(prompt_text: str):
+async def analyze_prompt_quick(request: PromptAnalyzeRequest):
     """Quick analysis of a prompt without saving to database"""
     try:
-        analysis_result = await prompt_analyzer.analyze_prompt_comprehensive(prompt_text)
+        analysis_result = await prompt_analyzer.analyze_prompt_comprehensive(request.prompt_text)
 
         return {
             "success": True,
@@ -304,3 +304,13 @@ async def analyze_prompt_quick(prompt_text: str):
     except Exception as e:
         print(f"Error analyzing prompt: {str(e)}")
         raise HTTPException(status_code=500, detail=f"Error analyzing prompt: {str(e)}")
+
+# Health check endpoint for prompt optimizer
+@router.get("/health")
+async def prompt_optimizer_health():
+    """Health check for prompt optimizer service"""
+    return {
+        "status": "healthy",
+        "service": "prompt-optimizer",
+        "version": "1.0.0"
+    }
