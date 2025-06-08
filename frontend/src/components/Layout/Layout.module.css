@@ -1,4 +1,4 @@
-/* Layout.module.css - Updated with Prompt Optimizer Icon */
+/* Layout.module.css - Updated with Prompt Library Icon */
 
 .layoutContainer {
   display: flex;
@@ -167,7 +167,7 @@
   background-size: contain;
 }
 
-/* NEW: Prompt Optimizer Icon */
+/* Prompt Optimizer Icon - Existing */
 .promptOptimizerIcon::before {
   content: "";
   display: inline-block;
@@ -177,13 +177,23 @@
   background-size: contain;
 }
 
-/* Alternative Prompt Optimizer Icon - Brain/AI themed */
-.promptOptimizerIconAlt::before {
+/* NEW: Prompt Library Icon - Library/Books themed */
+.promptLibraryIcon::before {
   content: "";
   display: inline-block;
   width: 24px;
   height: 24px;
-  background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='%23ffffff' viewBox='0 0 24 24'%3E%3Cpath d='M12,2A3,3 0 0,1 15,5V11A3,3 0 0,1 12,14A3,3 0 0,1 9,11V5A3,3 0 0,1 12,2M19,11C19,14.53 16.39,17.44 13,17.93V21H11V17.93C7.61,17.44 5,14.53 5,11H7A5,5 0 0,0 12,16A5,5 0 0,0 17,11H19Z'/%3E%3C/svg%3E") no-repeat center center;
+  background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='%23ffffff' viewBox='0 0 24 24'%3E%3Cpath d='M4 6H2v14c0 1.1.9 2 2 2h14v-2H4V6zm16-4H8c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2zm-1 9H9V9h10v2zm-4 4H9v-2h6v2zm4-8H9V5h10v2z'/%3E%3C/svg%3E") no-repeat center center;
+  background-size: contain;
+}
+
+/* Alternative Library Icon - More distinctive */
+.promptLibraryIconAlt::before {
+  content: "";
+  display: inline-block;
+  width: 24px;
+  height: 24px;
+  background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='%23ffffff' viewBox='0 0 24 24'%3E%3Cpath d='M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zM9 17H7v-7h2v7zm4 0h-2V7h2v10zm4 0h-2v-4h2v4z'/%3E%3C/svg%3E") no-repeat center center;
   background-size: contain;
 }
 
@@ -191,7 +201,8 @@
 .mainContent {
   flex: 1;
   height: 100%;
-  overflow: hidden;
+  overflow: auto;
+  overflow-x: hidden;
   background-color: #f5f7fa;
   position: relative;
 }

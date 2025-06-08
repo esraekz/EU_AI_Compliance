@@ -1,4 +1,4 @@
-// src/components/Layout/Layout.tsx - Updated with Prompt Optimizer
+// src/components/Layout/Layout.tsx - Updated with Prompt Library
 import { useRouter } from "next/router";
 import React, { useState } from "react";
 import styles from "./Layout.module.css";
@@ -10,6 +10,7 @@ const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   // Check if current path is in specific sections
   const isInvoicesSection = router.pathname.startsWith('/invoices');
   const isPromptOptimizerSection = router.pathname.startsWith('/eu_act/prompt-optimizer');
+  const isPromptLibrarySection = router.pathname.startsWith('/eu_act/prompt-library'); // NEW
 
   const navigateTo = (path: string) => {
     const currentPath = router.asPath.split('?')[0];
@@ -29,7 +30,12 @@ const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
         </div>
         <div className={styles.pageHeader}>
           <h1 className={styles.pageTitle}>
-            {isPromptOptimizerSection ? 'AI Governance & Compliance' : 'Document Processing'}
+            {isPromptOptimizerSection
+              ? 'AI Governance & Compliance'
+              : isPromptLibrarySection
+                ? 'Prompt Library & Templates'  // NEW: Library header
+                : 'Document Processing'
+            }
           </h1>
           <button className={styles.uploadButton}>
             Upload Document
@@ -73,7 +79,7 @@ const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
               )}
             </div>
 
-            {/* Prompt Optimizer - NEW */}
+            {/* Prompt Optimizer */}
             <div
               className={`${styles.navItem} ${isPromptOptimizerSection ? styles.active : ""
                 }`}
@@ -86,6 +92,22 @@ const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
               </div>
               {hoveredItem === 'promptOptimizer' && (
                 <div className={styles.tooltip}>Prompt Optimizer</div>
+              )}
+            </div>
+
+            {/* NEW: Prompt Library */}
+            <div
+              className={`${styles.navItem} ${isPromptLibrarySection ? styles.active : ""
+                }`}
+              onClick={() => navigateTo("/eu_act/prompt-library")}
+              onMouseEnter={() => setHoveredItem('promptLibrary')}
+              onMouseLeave={() => setHoveredItem(null)}
+            >
+              <div className={styles.icon}>
+                <div className={styles.promptLibraryIcon}></div>
+              </div>
+              {hoveredItem === 'promptLibrary' && (
+                <div className={styles.tooltip}>Prompt Library</div>
               )}
             </div>
 

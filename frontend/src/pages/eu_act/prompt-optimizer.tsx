@@ -241,21 +241,21 @@ const PromptOptimizerPage: React.FC = () => {
             background: 'linear-gradient(135deg, #8b9cf7 0%, #9ba3f7 50%, #a8b4f8 100%)',
             minHeight: '100vh',
             maxHeight: '100vh',
-            padding: '16px',
-            paddingBottom: '20px', // REDUCED: Less bottom spacing for more room
+            padding: '16px', // BALANCED: Proper spacing from edges
+            paddingBottom: '20px', // BALANCED: Reasonable bottom spacing
             boxSizing: 'border-box',
             overflow: 'hidden',
             display: 'flex',
             flexDirection: 'column'
         }}>
             <div style={{
-                maxWidth: '1400px',
-                margin: '0 auto',
+                maxWidth: '1200px', // RESPONSIVE: Reasonable max width for large screens
+                margin: '0 auto', // CENTERED: Balanced on large screens
                 width: '100%',
                 height: '100%',
                 display: 'flex',
                 flexDirection: 'column',
-                maxHeight: 'calc(100vh - 60px)' // UPDATED: More space with reduced padding
+                maxHeight: 'calc(100vh - 72px)' // BALANCED: Proper spacing
             }}>
                 {/* COMPACT HEADER - FIXED HEIGHT */}
                 <div style={{
@@ -263,7 +263,7 @@ const PromptOptimizerPage: React.FC = () => {
                     padding: '12px 20px',
                     borderRadius: '8px',
                     color: 'white',
-                    marginBottom: '12px',
+                    marginBottom: 'clamp(0.5rem, 2vh, 1rem)', // FLEXIBLE: Responsive spacing // BALANCED: Proper spacing
                     display: 'flex',
                     justifyContent: 'space-between',
                     alignItems: 'center',
@@ -271,7 +271,7 @@ const PromptOptimizerPage: React.FC = () => {
                     flexWrap: 'wrap',
                     gap: '8px',
                     flexShrink: 0,
-                    height: '60px' // FIXED HEIGHT
+                    height: '60px'
                 }}>
                     <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                         <div style={{ fontSize: '18px' }}>⚡</div>
@@ -341,12 +341,12 @@ const PromptOptimizerPage: React.FC = () => {
                 {/* MAIN LAYOUT - RESPONSIVE GRID */}
                 <div style={{
                     display: 'grid',
-                    gridTemplateColumns: window.innerWidth > 1024 ? '1fr 1fr' : '1fr', // RESPONSIVE: Single column on smaller screens
-                    gap: '12px',
+                    gridTemplateColumns: window.innerWidth > 1024 ? '1fr 1fr' : '1fr',
+                    gap: '16px', // BALANCED: Proper spacing between panels
                     width: '100%',
                     flex: 1,
-                    minHeight: 0, // This is crucial for flex children with overflow
-                    maxHeight: 'calc(100vh - 140px)' // UPDATED: More space available
+                    minHeight: 0,
+                    maxHeight: 'calc(100vh - 140px)' // BALANCED: Proper height with spacing
                 }}>
                     {/* LEFT PANEL - PROMPT EDITOR */}
                     <div style={{
@@ -373,7 +373,12 @@ const PromptOptimizerPage: React.FC = () => {
                                 Prompt Editor
                             </h2>
                         </div>
-                        <div style={{ padding: '12px', flex: 1, display: 'flex', flexDirection: 'column' }}>
+                        <div style={{
+                            padding: '16px', // RESPONSIVE: Better padding
+                            flex: 1,
+                            display: 'flex',
+                            flexDirection: 'column'
+                        }}>
                             <div style={{ marginBottom: '8px', flex: 1, display: 'flex', flexDirection: 'column' }}>
                                 <label style={{
                                     display: 'block',
@@ -390,9 +395,9 @@ const PromptOptimizerPage: React.FC = () => {
                                     placeholder="Write a blog post about artificial intelligence"
                                     style={{
                                         width: '100%',
-                                        flex: 1, // Takes available space
-                                        minHeight: '120px', // Reduced for better fit
-                                        maxHeight: '160px', // Reduced for better fit
+                                        flex: 1,
+                                        minHeight: window.innerWidth > 1400 ? '200px' : '160px', // RESPONSIVE: Scales with screen size
+                                        maxHeight: window.innerWidth > 1400 ? '280px' : '220px', // RESPONSIVE: Larger on big screens
                                         padding: '8px',
                                         border: '1px solid rgba(102, 126, 234, 0.3)',
                                         borderRadius: '6px',
@@ -493,7 +498,7 @@ const PromptOptimizerPage: React.FC = () => {
                                             style={{
                                                 display: 'flex',
                                                 alignItems: 'center',
-                                                gap: '4px',
+                                                gap: 'clamp(4px, 0.5vw, 10px)', // FLEXIBLE: Responsive gap // RESPONSIVE: More space on larger screens
                                                 padding: '5px',
                                                 border: `1px solid ${checked ? '#8b9cf7' : 'rgba(139, 156, 247, 0.3)'}`,
                                                 borderRadius: '4px',
@@ -545,7 +550,7 @@ const PromptOptimizerPage: React.FC = () => {
                                     opacity: (isLoading || !inputPrompt.trim()) ? 0.6 : 1,
                                     boxShadow: '0 2px 8px rgba(102, 126, 234, 0.3)',
                                     flexShrink: 0,
-                                    marginBottom: '6px' // ADDED: Space for clear button
+                                    marginBottom: '6px'
                                 }}
                             >
                                 <span>{isLoading ? '⏳' : '✨'}</span>
@@ -583,7 +588,7 @@ const PromptOptimizerPage: React.FC = () => {
                     <div style={{
                         display: 'flex',
                         flexDirection: 'column',
-                        gap: '10px',
+                        gap: '12px', // BALANCED: Proper spacing
                         height: '100%',
                         minHeight: 0
                     }}>
@@ -594,7 +599,7 @@ const PromptOptimizerPage: React.FC = () => {
                             boxShadow: '0 2px 8px rgba(102, 126, 234, 0.15)',
                             overflow: 'hidden',
                             border: '1px solid rgba(255, 255, 255, 0.8)',
-                            height: '40%' // ADJUSTED: Better proportion
+                            height: 'clamp(40%, 45vh, 55%)' // FLEXIBLE: Responsive height based on viewport // RESPONSIVE: More space on larger screens
                         }}>
                             <div style={{
                                 padding: '8px 12px',
@@ -610,19 +615,19 @@ const PromptOptimizerPage: React.FC = () => {
                                 </h2>
                             </div>
                             <div style={{
-                                padding: '12px',
-                                height: 'calc(100% - 42px)',
-                                overflow: 'hidden', // REMOVED SCROLL: No more scrolling
+                                padding: '16px', // RESPONSIVE: Better internal spacing
+                                height: 'calc(100% - 46px)',
+                                overflow: 'hidden',
                                 display: 'flex',
                                 flexDirection: 'column',
-                                gap: '10px'
+                                gap: '10px' // BALANCED: Proper spacing between sections
                             }}>
                                 {/* Top Row: Score Circle + Analysis Metrics */}
                                 <div style={{
                                     display: 'flex',
                                     alignItems: 'stretch',
                                     gap: '12px',
-                                    height: '70px' // Fixed height for top section
+                                    height: 'clamp(55px, 8vh, 80px)' // FLEXIBLE: Scales with viewport height // RESPONSIVE: Scales with screen size
                                 }}>
                                     {/* Score Circle */}
                                     <div style={{
@@ -633,11 +638,16 @@ const PromptOptimizerPage: React.FC = () => {
                                     }}>
                                         <div style={{
                                             position: 'relative',
-                                            width: '60px',
-                                            height: '60px',
+                                            width: window.innerWidth > 1400 ? '60px' : '50px', // RESPONSIVE: Larger on big screens
+                                            height: window.innerWidth > 1400 ? '60px' : '50px',
                                             margin: '0 auto 4px'
                                         }}>
-                                            <svg width="60" height="60" style={{ transform: 'rotate(-90deg)' }}>
+                                            <svg
+                                                width="100%"
+                                                height="100%"
+                                                viewBox="0 0 60 60"
+                                                style={{ transform: 'rotate(-90deg)' }}
+                                            >
                                                 <circle cx="30" cy="30" r="24" fill="none" stroke="#e2e8f0" strokeWidth="4" />
                                                 <circle
                                                     cx="30" cy="30" r="24" fill="none"
@@ -653,14 +663,14 @@ const PromptOptimizerPage: React.FC = () => {
                                                 top: '50%',
                                                 left: '50%',
                                                 transform: 'translate(-50%, -50%)',
-                                                fontSize: '14px',
+                                                fontSize: 'clamp(11px, 1.2vw, 16px)', // FLEXIBLE: Responsive text // RESPONSIVE: Larger text on big screens
                                                 fontWeight: '700',
                                                 color: optimizationResult ? getScoreColor(optimizationResult.overall_score) : '#8b9cf7'
                                             }}>
                                                 {optimizationResult ? getScorePercentage(optimizationResult.overall_score) : '--'}%
                                             </div>
                                         </div>
-                                        <div style={{ fontSize: '10px', color: '#718096', fontWeight: '500' }}>
+                                        <div style={{ fontSize: 'clamp(8px, 0.8vw, 12px)', color: '#718096', fontWeight: '500' }}>
                                             Overall Score
                                         </div>
                                     </div>
@@ -671,12 +681,12 @@ const PromptOptimizerPage: React.FC = () => {
                                             flex: 1,
                                             display: 'grid',
                                             gridTemplateColumns: '1fr 1fr',
-                                            gap: '6px',
+                                            gap: '4px',
                                             alignContent: 'start'
                                         }}>
                                             {Object.entries(optimizationResult.analyses).map(([key, analysis]: [string, any]) => (
                                                 <div key={key} style={{
-                                                    padding: '6px',
+                                                    padding: 'clamp(4px, 0.6vw, 10px)', // FLEXIBLE: Responsive padding // RESPONSIVE: Better padding on large screens
                                                     background: 'rgba(139, 156, 247, 0.05)',
                                                     borderRadius: '4px',
                                                     border: '1px solid rgba(139, 156, 247, 0.15)',
@@ -686,10 +696,10 @@ const PromptOptimizerPage: React.FC = () => {
                                                         display: 'flex',
                                                         justifyContent: 'space-between',
                                                         alignItems: 'center',
-                                                        marginBottom: '2px'
+                                                        marginBottom: '1px'
                                                     }}>
                                                         <span style={{
-                                                            fontSize: '10px',
+                                                            fontSize: 'clamp(8px, 0.8vw, 12px)', // FLEXIBLE: Responsive text // RESPONSIVE: Readable text
                                                             fontWeight: '600',
                                                             color: '#4a5568',
                                                             textTransform: 'capitalize'
@@ -697,14 +707,14 @@ const PromptOptimizerPage: React.FC = () => {
                                                             {key}
                                                         </span>
                                                         <span style={{
-                                                            fontSize: '11px',
+                                                            fontSize: 'clamp(9px, 1vw, 14px)', // FLEXIBLE: Responsive scores // RESPONSIVE: Readable scores
                                                             fontWeight: '700',
                                                             color: getScoreColor(analysis.score || 0)
                                                         }}>
                                                             {getScorePercentage(analysis.score || 0)}%
                                                         </span>
                                                     </div>
-                                                    <div style={{ fontSize: '8px', color: '#6b7280' }}>
+                                                    <div style={{ fontSize: 'clamp(6px, 0.7vw, 9px)', color: '#6b7280' }}>
                                                         {(analysis.issues?.length || analysis.vulnerabilities?.length || analysis.structure_issues?.length || 0)} issues
                                                     </div>
                                                 </div>
@@ -713,77 +723,94 @@ const PromptOptimizerPage: React.FC = () => {
                                     )}
                                 </div>
 
-                                {/* BOTTOM: Token Analysis */}
+                                {/* BOTTOM: Token Analysis - MORE SPACE */}
                                 {optimizationResult && (
                                     <div style={{
                                         background: 'linear-gradient(135deg, #e0f7fa 0%, #e1f5fe 100%)',
                                         border: '1px solid rgba(79, 172, 254, 0.3)',
-                                        borderRadius: '8px',
-                                        padding: '10px'
+                                        borderRadius: '6px',
+                                        padding: window.innerWidth > 1400 ? '16px' : '12px', // RESPONSIVE: Better padding
+                                        flex: 1,
+                                        minHeight: window.innerWidth > 1400 ? '100px' : '80px', // RESPONSIVE: More space on larger screens
+                                        display: 'flex',
+                                        flexDirection: 'column'
                                     }}>
                                         <div style={{
-                                            fontSize: '11px',
+                                            fontSize: window.innerWidth > 1400 ? '13px' : '11px', // RESPONSIVE: Readable title
                                             fontWeight: '600',
                                             color: '#1e40af',
-                                            marginBottom: '8px'
+                                            marginBottom: '10px'
                                         }}>
                                             Token Analysis
                                         </div>
                                         <div style={{
                                             display: 'grid',
                                             gridTemplateColumns: '1fr 1fr 1fr',
-                                            gap: '6px'
+                                            gap: window.innerWidth > 1400 ? '12px' : '8px', // RESPONSIVE: Better spacing
+                                            flex: 1
                                         }}>
                                             <div style={{
                                                 textAlign: 'center',
-                                                padding: '6px',
+                                                padding: window.innerWidth > 1400 ? '16px' : '12px', // RESPONSIVE: Better padding
                                                 background: 'white',
-                                                borderRadius: '4px',
-                                                boxShadow: '0 1px 3px rgba(79, 172, 254, 0.1)'
+                                                borderRadius: '6px',
+                                                boxShadow: '0 2px 6px rgba(79, 172, 254, 0.2)',
+                                                display: 'flex',
+                                                flexDirection: 'column',
+                                                justifyContent: 'center',
+                                                minHeight: window.innerWidth > 1400 ? '70px' : '55px' // RESPONSIVE: Taller on large screens
                                             }}>
                                                 <div style={{
-                                                    fontSize: '12px',
+                                                    fontSize: window.innerWidth > 1400 ? '22px' : '18px', // RESPONSIVE: Much larger on big screens
                                                     fontWeight: '700',
-                                                    marginBottom: '2px',
+                                                    marginBottom: '6px',
                                                     color: '#1e40af'
                                                 }}>
                                                     {optimizationResult.token_count_original}
                                                 </div>
-                                                <div style={{ fontSize: '8px', color: '#64748b' }}>Original</div>
+                                                <div style={{ fontSize: 'clamp(10px, 1vw, 15px)', color: '#64748b', fontWeight: '500' }}>Original</div>
                                             </div>
                                             <div style={{
                                                 textAlign: 'center',
-                                                padding: '6px',
+                                                padding: 'clamp(0.75rem, 1.2vw, 1.5rem)', // FLEXIBLE: Responsive padding
                                                 background: 'white',
-                                                borderRadius: '4px',
-                                                boxShadow: '0 1px 3px rgba(79, 172, 254, 0.1)'
+                                                borderRadius: '6px',
+                                                boxShadow: '0 2px 6px rgba(79, 172, 254, 0.2)',
+                                                display: 'flex',
+                                                flexDirection: 'column',
+                                                justifyContent: 'center',
+                                                minHeight: 'clamp(50px, 8vh, 80px)' // FLEXIBLE: Responsive height
                                             }}>
                                                 <div style={{
-                                                    fontSize: '12px',
+                                                    fontSize: 'clamp(16px, 2vw, 26px)', // FLEXIBLE: Large responsive numbers
                                                     fontWeight: '700',
-                                                    marginBottom: '2px',
+                                                    marginBottom: 'clamp(0.25rem, 0.5vh, 0.5rem)',
                                                     color: '#1e40af'
                                                 }}>
                                                     {optimizationResult.token_count_optimized}
                                                 </div>
-                                                <div style={{ fontSize: '8px', color: '#64748b' }}>Optimized</div>
+                                                <div style={{ fontSize: 'clamp(10px, 1vw, 15px)', color: '#64748b', fontWeight: '500' }}>Optimized</div>
                                             </div>
                                             <div style={{
                                                 textAlign: 'center',
-                                                padding: '6px',
+                                                padding: 'clamp(0.75rem, 1.2vw, 1.5rem)',
                                                 background: 'white',
-                                                borderRadius: '4px',
-                                                boxShadow: '0 1px 3px rgba(79, 172, 254, 0.1)'
+                                                borderRadius: '6px',
+                                                boxShadow: '0 2px 6px rgba(79, 172, 254, 0.2)',
+                                                display: 'flex',
+                                                flexDirection: 'column',
+                                                justifyContent: 'center',
+                                                minHeight: 'clamp(50px, 8vh, 80px)'
                                             }}>
                                                 <div style={{
-                                                    fontSize: '12px',
+                                                    fontSize: 'clamp(16px, 2vw, 26px)',
                                                     fontWeight: '700',
-                                                    marginBottom: '2px',
+                                                    marginBottom: 'clamp(0.25rem, 0.5vh, 0.5rem)',
                                                     color: '#10b981'
                                                 }}>
                                                     {optimizationResult.token_savings || (optimizationResult.token_count_optimized - optimizationResult.token_count_original) > 0 ? '+' : ''}{optimizationResult.token_savings || (optimizationResult.token_count_optimized - optimizationResult.token_count_original)}
                                                 </div>
-                                                <div style={{ fontSize: '8px', color: '#64748b' }}>Change</div>
+                                                <div style={{ fontSize: 'clamp(10px, 1vw, 15px)', color: '#64748b', fontWeight: '500' }}>Change</div>
                                             </div>
                                         </div>
                                     </div>
@@ -817,7 +844,7 @@ const PromptOptimizerPage: React.FC = () => {
                                     Optimized Versions
                                 </h3>
                             </div>
-                            <div style={{ padding: '12px', flex: 1, display: 'flex', flexDirection: 'column', minHeight: 0 }}>
+                            <div style={{ padding: 'clamp(0.75rem, 2vw, 1.5rem)', flex: 1, display: 'flex', flexDirection: 'column', minHeight: 0 }}>
                                 {/* Version Tabs */}
                                 <div style={{
                                     display: 'flex',
@@ -864,7 +891,7 @@ const PromptOptimizerPage: React.FC = () => {
                                     lineHeight: '1.3',
                                     color: '#1e40af',
                                     position: 'relative',
-                                    marginBottom: '8px',
+                                    marginBottom: '10px',
                                     flex: 1,
                                     overflowY: 'auto',
                                     whiteSpace: 'pre-wrap',

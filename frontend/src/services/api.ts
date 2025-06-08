@@ -578,6 +578,189 @@ export const promptOptimizerApi = {
   }
 };
 
-// Add this to your existing export at the bottom of api.ts
-// export { promptOptimizerApi };
-export default api;
+// Add this to your frontend api.ts to test the integration
+
+// ADD THESE FUNCTIONS TO YOUR EXISTING src/services/api.ts FILE
+// Scroll to the bottom and add this section:
+
+// Template Library API Functions
+export const templateLibraryApi = {
+  // Health check
+  healthCheck: async () => {
+    try {
+      const response = await api.get('/template-library/health');
+      return response.data;
+    } catch (error) {
+      console.error('Template library health check failed:', error);
+      throw error;
+    }
+  },
+
+  // Get all templates with filtering
+  getTemplates: async (params: any = {}) => {
+    try {
+      const searchParams = new URLSearchParams();
+
+      // Add parameters if they exist
+      if (params.limit) searchParams.append('limit', params.limit.toString());
+      if (params.offset) searchParams.append('offset', params.offset.toString());
+      if (params.category && params.category !== 'All') searchParams.append('category', params.category);
+      if (params.search) searchParams.append('search', params.search);
+      if (params.sort_by) searchParams.append('sort_by', params.sort_by);
+      if (params.is_featured !== undefined) searchParams.append('is_featured', params.is_featured.toString());
+
+      const url = `/template-library/templates${searchParams.toString() ? '?' + searchParams.toString() : ''}`;
+      const response = await api.get(url);
+      return response.data;
+    } catch (error) {
+      console.error('Get templates failed:', error);
+      throw error;
+    }
+  },
+
+  // Get featured templates for homepage
+  getFeaturedTemplates: async (limit: number = 8) => {
+    try {
+      const response = await api.get(`/template-library/templates/featured?limit=${limit}`);
+      return response.data;
+    } catch (error) {
+      console.error('Get featured templates failed:', error);
+      throw error;
+    }
+  },
+
+  // Get single template by ID
+  getTemplate: async (templateId: string) => {
+    try {
+      const response = await api.get(`/template-library/templates/${templateId}`);
+      return response.data;
+    } catch (error) {
+      console.error(`Get template ${templateId} failed:`, error);
+      throw error;
+    }
+  },
+
+  // Create new template
+  createTemplate: async (templateData: {
+    title: string;
+    description?: string;
+    content: string;
+    category: string;
+    tags?: string[];
+    is_public?: boolean;
+    is_featured?: boolean;
+  }) => {
+    try {
+      const response = await api.post('/template-library/templates', templateData);
+      return response.data;
+    } catch (error) {
+      console.error('Create template failed:', error);
+      throw error;
+    }
+  },
+
+  // Update existing template
+  updateTemplate: async (templateId: string, templateData: any) => {
+    try {
+      const response = await api.put(`/template-library/templates/${templateId}`, templateData);
+      return response.data;
+    } catch (error) {
+      console.error(`Update template ${templateId} failed:`, error);
+      throw error;
+    }
+  },
+
+  // Use template (logs usage and returns template data)
+  useTemplate: async (templateId: string) => {
+    try {
+      const response = await api.post(`/template-library/templates/${templateId}/use`);
+      return response.data;
+    } catch (error) {
+      console.error(`Use template ${templateId} failed:`, error);
+      throw error;
+    }
+  },
+
+  // Get template categories
+  getCategories: async () => {
+    try {
+      const response = await api.get('/template-library/categories');
+      return response.data;
+    } catch (error) {
+      console.error('Get categories failed:', error);
+      throw error;
+    }
+  },
+
+  // Get dashboard statistics
+  getDashboardStats: async () => {
+    try {
+      const response = await api.get('/template-library/dashboard');
+      return response.data;
+    } catch (error) {
+      console.error('Get dashboard stats failed:', error);
+      throw error;
+    }
+  },
+
+  // Search templates with specific query
+  searchTemplates: async (searchTerm: string, filters: any = {}) => {
+    try {
+      const params = {
+        search: searchTerm,
+        ...filters
+      };
+      return await templateLibraryApi.getTemplates(params);
+    } catch (error) {
+      console.error('Search templates failed:', error);
+      throw error;
+    }
+  },
+
+  // Get templates by category
+  getTemplatesByCategory: async (category: string, limit: number = 20) => {
+    try {
+      const params = {
+        category: category,
+        limit: limit
+      };
+      return await templateLibraryApi.getTemplates(params);
+    } catch (error) {
+      console.error(`Get templates by category ${category} failed:`, error);
+      throw error;
+    }
+  }
+};
+
+// Test function for debugging (optional - you can remove this)
+export const testTemplateLibraryAPI = async () => {
+  console.log('🧪 Testing Template Library API integration...');
+
+  try {
+    // Test health check
+    console.log('1. Testing health check...');
+    const health = await templateLibraryApi.healthCheck();
+    console.log('✅ Health check:', health);
+
+    // Test get categories
+    console.log('2. Testing get categories...');
+    const categories = await templateLibraryApi.getCategories();
+    console.log('✅ Categories:', categories);
+
+    // Test get featured templates
+    console.log('3. Testing get featured templates...');
+    const featured = await templateLibraryApi.getFeaturedTemplates();
+    console.log('✅ Featured templates:', featured);
+
+    // Test get all templates
+    console.log('4. Testing get all templates...');
+    const templates = await templateLibraryApi.getTemplates({ limit: 5 });
+    console.log('✅ All templates:', templates);
+
+    console.log('🎉 All API tests passed!');
+    return true;
+  } catch (error) {
+    console.error('❌ API test failed:', error);
+    return false;
+  }
+};
