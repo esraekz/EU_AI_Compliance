@@ -7,7 +7,7 @@ from pydantic import BaseModel
 from datetime import datetime
 import json
 
-TEST_USER = {"id": "12345678-1234-5678-9012-123456789012"}
+TEST_USER = {"id": "60f7ebaf-ec62-4348-bb85-cd73be255c6a"}
 
 router = APIRouter(prefix="/ai-systems", tags=["AI Systems"])
 
