@@ -126,6 +126,20 @@ const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
                 <div className={styles.tooltip}>Chat Assistant</div>
               )}
             </div>
+            {/* AI Risk Assessment */}
+            <div
+              className={`${styles.navItem} ${router.pathname.startsWith('/eu_act/risk-assessment') ? styles.active : ""}`}
+              onClick={() => navigateTo("/eu_act/risk-assessment")}
+              onMouseEnter={() => setHoveredItem('riskAssessment')}
+              onMouseLeave={() => setHoveredItem(null)}
+            >
+              <div className={styles.icon}>
+                <div className={styles.riskAssessmentIcon}></div>
+              </div>
+              {hoveredItem === 'riskAssessment' && (
+                <div className={styles.tooltip}>AI Risk Assessment</div>
+              )}
+            </div>
           </nav>
         </aside>
 

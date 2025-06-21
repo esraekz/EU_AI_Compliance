@@ -1,5 +1,5 @@
 // src/services/api.ts
-import axios from 'axios';
+import axios from 'axios'; // ← Add AxiosError import
 import { ApiResponse, ExtractionField, Invoice, InvoiceListParams } from '../types/invoice';
 
 // QA Types - UPDATED with session support
@@ -731,6 +731,133 @@ export const templateLibraryApi = {
     }
   }
 };
+
+// AI Risk Assessment Types
+export interface AISystem {
+  id: string;
+  user_id: string;
+  name: string;
+  description?: string;
+  development_stage?: string;
+  status: string;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface Assessment {
+  id: string;
+  ai_system_id: string;
+  current_step: number;
+  completed_steps: number;
+  step_1_completed: boolean;
+  step_2_completed: boolean;
+  step_3_completed: boolean;
+  system_name?: string;
+  system_description?: string;
+  development_stage?: string;
+  primary_purpose?: string;
+  purpose_details?: string;
+  prohibited_practices?: any;
+  safety_component?: string;
+  impact_level?: string;
+}
+
+export interface ClassificationResult {
+  id: string;
+  ai_system_id: string;
+  risk_level: string;
+  primary_reason: string;
+  confidence_level: string;
+  created_at: string;
+}
+
+export interface AISystemCreateRequest {
+  name: string;
+  description?: string;
+  development_stage?: string;
+}
+
+export interface AssessmentStepUpdate {
+  step: number;
+  data: Record<string, any>;
+}
+
+// AI Risk Assessment API
+export const aiSystemsApi = {
+  // Health check
+  healthCheck: async () => {
+    try {
+      const response = await api.get('/ai-systems/health');
+      return response.data;
+    } catch (error) {
+      console.error('AI Systems health check failed:', error);
+      throw error;
+    }
+  },
+
+  // Create new AI system
+  createAISystem: async (systemData: AISystemCreateRequest) => {
+    try {
+      const response = await api.post('/ai-systems/', systemData);
+      return response.data;
+    } catch (error) {
+      console.error('Create AI system failed:', error);
+      throw error;
+    }
+  },
+
+  getAISystems: async (params: { limit?: number; offset?: number } = {}) => {
+    try {
+      console.log('🔄 Fetching AI systems...');
+      console.log('🔄 API base URL:', process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000');
+      console.log('🔄 Request params:', params);
+
+      const response = await api.get('/ai-systems/', { params });
+      console.log('✅ AI systems response:', response.data);
+      return response.data;
+    } catch (error: any) {  // ← Add ': any' here
+      console.error('❌ Get AI systems failed:', error);
+      console.error('❌ Error response:', error.response?.data);
+      console.error('❌ Error status:', error.response?.status);
+      console.error('❌ Error URL:', error.config?.url);
+      throw error;
+    }
+  },
+
+  // Get specific AI system with assessment
+  getAISystem: async (systemId: string) => {
+    try {
+      const response = await api.get(`/ai-systems/${systemId}`);
+      return response.data;
+    } catch (error) {
+      console.error(`Get AI system ${systemId} failed:`, error);
+      throw error;
+    }
+  },
+
+  // Update assessment step
+  updateAssessmentStep: async (systemId: string, stepUpdate: AssessmentStepUpdate) => {
+    try {
+      const response = await api.put(`/ai-systems/${systemId}/assessment`, stepUpdate);
+      return response.data;
+    } catch (error) {
+      console.error(`Update assessment step failed:`, error);
+      throw error;
+    }
+  },
+
+  // Classify AI system
+  classifyAISystem: async (systemId: string) => {
+    try {
+      const response = await api.post(`/ai-systems/${systemId}/classify`);
+      return response.data;
+    } catch (error) {
+      console.error(`Classify AI system ${systemId} failed:`, error);
+      throw error;
+    }
+  }
+};
+
 
 // Test function for debugging (optional - you can remove this)
 export const testTemplateLibraryAPI = async () => {

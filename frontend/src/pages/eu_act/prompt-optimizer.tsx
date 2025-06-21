@@ -1,4 +1,4 @@
-// pages/eu_act/prompt-optimizer.tsx - UPDATED VERSION
+// pages/eu_act/prompt-optimizer.tsx - Enhanced with Save to Library functionality
 import { useRouter } from 'next/router';
 import React, { useEffect, useState } from 'react';
 
@@ -69,6 +69,23 @@ const promptOptimizerApi = {
     },
 };
 
+// NEW: Template Library API
+const templateLibraryApi = {
+    saveToLibrary: async (templateData: any) => {
+        const response = await fetch(`${API_BASE_URL}/template-library/templates`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(templateData),
+        });
+        return await response.json();
+    },
+
+    getFeaturedTemplates: async () => {
+        const response = await fetch(`${API_BASE_URL}/template-library/templates/featured`);
+        return await response.json();
+    }
+};
+
 interface OptimizationGoals {
     improve_clarity: boolean;
     add_specificity: boolean;
@@ -98,6 +115,23 @@ const PromptOptimizerPage: React.FC = () => {
     const [error, setError] = useState<string | null>(null);
     const [success, setSuccess] = useState<string | null>(null);
     const [currentVersion, setCurrentVersion] = useState<'original' | 'clarity' | 'specificity' | 'structure'>('original');
+
+    // NEW: Save to Library states
+    const [isSavingToLibrary, setIsSavingToLibrary] = useState(false);
+    const [showSaveModal, setShowSaveModal] = useState(false);
+    const [saveToLibraryData, setSaveToLibraryData] = useState({
+        title: '',
+        description: '',
+        category: 'AI Compliance',
+        tags: 'optimized, ai-compliance',
+        is_featured: true,
+        is_public: false
+    });
+
+    // NEW: Template Library access states
+    const [showTemplateLibrary, setShowTemplateLibrary] = useState(false);
+    const [featuredTemplates, setFeaturedTemplates] = useState<any[]>([]);
+    const [loadingTemplates, setLoadingTemplates] = useState(false);
 
     // Your existing functions - keep as is
     useEffect(() => {
@@ -164,12 +198,122 @@ const PromptOptimizerPage: React.FC = () => {
                     // Auto-hide success message after 3 seconds
                     setTimeout(() => setSuccess(null), 3000);
                     await loadSavedPrompts();
+
+                    // Pre-fill save modal with optimized data
+                    setSaveToLibraryData(prev => ({
+                        ...prev,
+                        title: promptTitle || 'Optimized Prompt',
+                        description: `Optimized prompt with ${Math.round(optimizeResponse.data.overall_score * 100)}% quality score`
+                    }));
                 }
             }
         } catch (error) {
             setError('Failed to optimize prompt. Make sure your backend is running.');
         } finally {
             setIsLoading(false);
+        }
+    };
+
+    // NEW: Load Featured Templates
+    const loadFeaturedTemplates = async () => {
+        setLoadingTemplates(true);
+        try {
+            const response = await templateLibraryApi.getFeaturedTemplates();
+            if (response.success && response.data) {
+                setFeaturedTemplates(response.data);
+            } else {
+                // Fallback to mock data if API fails
+                setFeaturedTemplates([
+                    {
+                        id: '1',
+                        title: 'Marketing Email Generator',
+                        content: 'Create a compelling marketing email for [PRODUCT] targeting [AUDIENCE] with focus on [BENEFIT]. Include subject line, body, and CTA.',
+                        category: 'Marketing',
+                        tags: ['email', 'marketing', 'conversion'],
+                        usage_count: 1247
+                    },
+                    {
+                        id: '2',
+                        title: 'AI Risk Assessment Prompt',
+                        content: 'Analyze the following AI system for potential risks and compliance issues: [AI_SYSTEM_DESCRIPTION]. Evaluate bias, fairness, transparency, and accountability aspects.',
+                        category: 'AI Compliance',
+                        tags: ['risk-assessment', 'ai-compliance', 'audit'],
+                        usage_count: 892
+                    }
+                ]);
+            }
+        } catch (error) {
+            console.error('Failed to load featured templates:', error);
+            // Use mock data as fallback
+            setFeaturedTemplates([]);
+        } finally {
+            setLoadingTemplates(false);
+        }
+    };
+
+    // NEW: Import Template
+    const handleImportTemplate = (template: any) => {
+        setInputPrompt(template.content);
+        setPromptTitle(template.title);
+        setShowTemplateLibrary(false);
+        setSuccess(`Template "${template.title}" imported successfully!`);
+        setTimeout(() => setSuccess(null), 3000);
+    };
+
+    // NEW: Open Template Library
+    const handleOpenTemplateLibrary = async () => {
+        setShowTemplateLibrary(true);
+        await loadFeaturedTemplates();
+    };
+    const handleSaveToLibrary = async () => {
+        if (!optimizationResult) {
+            setError('Please optimize a prompt first before saving to library');
+            return;
+        }
+
+        setShowSaveModal(true);
+    };
+
+    const confirmSaveToLibrary = async () => {
+        if (!optimizationResult || !saveToLibraryData.title.trim()) {
+            setError('Please provide a title for the template');
+            return;
+        }
+
+        setIsSavingToLibrary(true);
+        setError(null);
+
+        try {
+            const templateData = {
+                title: saveToLibraryData.title,
+                description: saveToLibraryData.description,
+                content: getVersionContent(), // Save the currently selected version
+                category: saveToLibraryData.category,
+                tags: saveToLibraryData.tags.split(',').map(tag => tag.trim()).filter(tag => tag.length > 0),
+                is_featured: saveToLibraryData.is_featured,
+                is_public: saveToLibraryData.is_public
+            };
+
+            const response = await templateLibraryApi.saveToLibrary(templateData);
+
+            if (response.success) {
+                setSuccess('✅ Prompt saved to Featured Templates!');
+                setShowSaveModal(false);
+
+                // Show success with navigation option
+                setTimeout(() => {
+                    if (confirm('Prompt saved successfully! Would you like to view it in the Template Library?')) {
+                        router.push('/eu_act/prompt-library');
+                    }
+                }, 1000);
+            } else {
+                throw new Error(response.message || 'Failed to save to library');
+            }
+        } catch (error) {
+            console.error('Error saving to library:', error);
+            setError('Failed to save to library. Please try again.');
+        } finally {
+            setIsSavingToLibrary(false);
         }
     };
 
@@ -241,21 +385,21 @@ const PromptOptimizerPage: React.FC = () => {
             background: 'linear-gradient(135deg, #8b9cf7 0%, #9ba3f7 50%, #a8b4f8 100%)',
             minHeight: '100vh',
             maxHeight: '100vh',
-            padding: '16px', // BALANCED: Proper spacing from edges
-            paddingBottom: '20px', // BALANCED: Reasonable bottom spacing
+            padding: '16px',
+            paddingBottom: '20px',
             boxSizing: 'border-box',
             overflow: 'hidden',
             display: 'flex',
             flexDirection: 'column'
         }}>
             <div style={{
-                maxWidth: '1200px', // RESPONSIVE: Reasonable max width for large screens
-                margin: '0 auto', // CENTERED: Balanced on large screens
+                maxWidth: '1200px',
+                margin: '0 auto',
                 width: '100%',
                 height: '100%',
                 display: 'flex',
                 flexDirection: 'column',
-                maxHeight: 'calc(100vh - 72px)' // BALANCED: Proper spacing
+                maxHeight: 'calc(100vh - 72px)'
             }}>
                 {/* COMPACT HEADER - FIXED HEIGHT */}
                 <div style={{
@@ -263,7 +407,7 @@ const PromptOptimizerPage: React.FC = () => {
                     padding: '12px 20px',
                     borderRadius: '8px',
                     color: 'white',
-                    marginBottom: 'clamp(0.5rem, 2vh, 1rem)', // FLEXIBLE: Responsive spacing // BALANCED: Proper spacing
+                    marginBottom: 'clamp(0.5rem, 2vh, 1rem)',
                     display: 'flex',
                     justifyContent: 'space-between',
                     alignItems: 'center',
@@ -285,6 +429,24 @@ const PromptOptimizerPage: React.FC = () => {
                         </div>
                     </div>
                     <div style={{ display: 'flex', alignItems: 'center', gap: '12px', flexWrap: 'wrap' }}>
+                        {/* NEW: Library Navigation Button */}
+                        <button
+                            onClick={() => router.push('/eu_act/prompt-library')}
+                            style={{
+                                background: 'rgba(255, 255, 255, 0.25)',
+                                border: '1px solid rgba(255, 255, 255, 0.3)',
+                                padding: '4px 8px',
+                                borderRadius: '4px',
+                                color: 'white',
+                                fontSize: '10px',
+                                cursor: 'pointer',
+                                display: 'flex',
+                                alignItems: 'center',
+                                gap: '4px'
+                            }}
+                        >
+                            📚 Library
+                        </button>
                         <div style={{
                             background: 'rgba(255, 255, 255, 0.25)',
                             padding: '3px 8px',
@@ -342,11 +504,11 @@ const PromptOptimizerPage: React.FC = () => {
                 <div style={{
                     display: 'grid',
                     gridTemplateColumns: window.innerWidth > 1024 ? '1fr 1fr' : '1fr',
-                    gap: '16px', // BALANCED: Proper spacing between panels
+                    gap: '16px',
                     width: '100%',
                     flex: 1,
                     minHeight: 0,
-                    maxHeight: 'calc(100vh - 140px)' // BALANCED: Proper height with spacing
+                    maxHeight: 'calc(100vh - 140px)'
                 }}>
                     {/* LEFT PANEL - PROMPT EDITOR */}
                     <div style={{
@@ -374,30 +536,56 @@ const PromptOptimizerPage: React.FC = () => {
                             </h2>
                         </div>
                         <div style={{
-                            padding: '16px', // RESPONSIVE: Better padding
+                            padding: '16px',
                             flex: 1,
                             display: 'flex',
                             flexDirection: 'column'
                         }}>
                             <div style={{ marginBottom: '8px', flex: 1, display: 'flex', flexDirection: 'column' }}>
-                                <label style={{
-                                    display: 'block',
-                                    fontSize: '11px',
-                                    fontWeight: '600',
-                                    color: '#4a5568',
+                                <div style={{
+                                    display: 'flex',
+                                    justifyContent: 'space-between',
+                                    alignItems: 'center',
                                     marginBottom: '4px'
                                 }}>
-                                    Your Prompt
-                                </label>
+                                    <label style={{
+                                        fontSize: '11px',
+                                        fontWeight: '600',
+                                        color: '#4a5568'
+                                    }}>
+                                        Your Prompt
+                                    </label>
+                                    {/* NEW: Template Library Icon */}
+                                    <button
+                                        onClick={handleOpenTemplateLibrary}
+                                        style={{
+                                            background: 'linear-gradient(135deg, #667eea, #764ba2)',
+                                            border: 'none',
+                                            borderRadius: '4px',
+                                            padding: '4px 8px',
+                                            color: 'white',
+                                            fontSize: '10px',
+                                            cursor: 'pointer',
+                                            display: 'flex',
+                                            alignItems: 'center',
+                                            gap: '4px',
+                                            boxShadow: '0 2px 4px rgba(102, 126, 234, 0.3)',
+                                            transition: 'all 0.2s ease'
+                                        }}
+                                        title="Browse Featured Templates"
+                                    >
+                                        📚 Templates
+                                    </button>
+                                </div>
                                 <textarea
                                     value={inputPrompt}
                                     onChange={(e) => setInputPrompt(e.target.value)}
-                                    placeholder="Write a blog post about artificial intelligence"
+                                    placeholder="Write a blog post about artificial intelligence OR click 'Templates' to import from library"
                                     style={{
                                         width: '100%',
                                         flex: 1,
-                                        minHeight: window.innerWidth > 1400 ? '200px' : '160px', // RESPONSIVE: Scales with screen size
-                                        maxHeight: window.innerWidth > 1400 ? '280px' : '220px', // RESPONSIVE: Larger on big screens
+                                        minHeight: window.innerWidth > 1400 ? '200px' : '160px',
+                                        maxHeight: window.innerWidth > 1400 ? '280px' : '220px',
                                         padding: '8px',
                                         border: '1px solid rgba(102, 126, 234, 0.3)',
                                         borderRadius: '6px',
@@ -498,7 +686,7 @@ const PromptOptimizerPage: React.FC = () => {
                                             style={{
                                                 display: 'flex',
                                                 alignItems: 'center',
-                                                gap: 'clamp(4px, 0.5vw, 10px)', // FLEXIBLE: Responsive gap // RESPONSIVE: More space on larger screens
+                                                gap: 'clamp(4px, 0.5vw, 10px)',
                                                 padding: '5px',
                                                 border: `1px solid ${checked ? '#8b9cf7' : 'rgba(139, 156, 247, 0.3)'}`,
                                                 borderRadius: '4px',
@@ -557,7 +745,7 @@ const PromptOptimizerPage: React.FC = () => {
                                 <span>{isLoading ? 'Analyzing...' : 'Analyze & Optimize'}</span>
                             </button>
 
-                            {/* NEW: Clear All Button */}
+                            {/* Clear All Button */}
                             <button
                                 onClick={handleClearPrompt}
                                 style={{
@@ -588,18 +776,18 @@ const PromptOptimizerPage: React.FC = () => {
                     <div style={{
                         display: 'flex',
                         flexDirection: 'column',
-                        gap: '12px', // BALANCED: Proper spacing
+                        gap: '12px',
                         height: '100%',
                         minHeight: 0
                     }}>
-                        {/* QUALITY ASSESSMENT - MADE DETAILS VISIBLE */}
+                        {/* QUALITY ASSESSMENT */}
                         <div style={{
                             background: 'rgba(255, 255, 255, 0.95)',
                             borderRadius: '8px',
                             boxShadow: '0 2px 8px rgba(102, 126, 234, 0.15)',
                             overflow: 'hidden',
                             border: '1px solid rgba(255, 255, 255, 0.8)',
-                            height: 'clamp(40%, 45vh, 55%)' // FLEXIBLE: Responsive height based on viewport // RESPONSIVE: More space on larger screens
+                            height: 'clamp(40%, 45vh, 55%)'
                         }}>
                             <div style={{
                                 padding: '8px 12px',
@@ -615,19 +803,19 @@ const PromptOptimizerPage: React.FC = () => {
                                 </h2>
                             </div>
                             <div style={{
-                                padding: '16px', // RESPONSIVE: Better internal spacing
+                                padding: '16px',
                                 height: 'calc(100% - 46px)',
                                 overflow: 'hidden',
                                 display: 'flex',
                                 flexDirection: 'column',
-                                gap: '10px' // BALANCED: Proper spacing between sections
+                                gap: '10px'
                             }}>
                                 {/* Top Row: Score Circle + Analysis Metrics */}
                                 <div style={{
                                     display: 'flex',
                                     alignItems: 'stretch',
                                     gap: '12px',
-                                    height: 'clamp(55px, 8vh, 80px)' // FLEXIBLE: Scales with viewport height // RESPONSIVE: Scales with screen size
+                                    height: 'clamp(55px, 8vh, 80px)'
                                 }}>
                                     {/* Score Circle */}
                                     <div style={{
@@ -638,7 +826,7 @@ const PromptOptimizerPage: React.FC = () => {
                                     }}>
                                         <div style={{
                                             position: 'relative',
-                                            width: window.innerWidth > 1400 ? '60px' : '50px', // RESPONSIVE: Larger on big screens
+                                            width: window.innerWidth > 1400 ? '60px' : '50px',
                                             height: window.innerWidth > 1400 ? '60px' : '50px',
                                             margin: '0 auto 4px'
                                         }}>
@@ -663,7 +851,7 @@ const PromptOptimizerPage: React.FC = () => {
                                                 top: '50%',
                                                 left: '50%',
                                                 transform: 'translate(-50%, -50%)',
-                                                fontSize: 'clamp(11px, 1.2vw, 16px)', // FLEXIBLE: Responsive text // RESPONSIVE: Larger text on big screens
+                                                fontSize: 'clamp(11px, 1.2vw, 16px)',
                                                 fontWeight: '700',
                                                 color: optimizationResult ? getScoreColor(optimizationResult.overall_score) : '#8b9cf7'
                                             }}>
@@ -675,7 +863,7 @@ const PromptOptimizerPage: React.FC = () => {
                                         </div>
                                     </div>
 
-                                    {/* RIGHT SIDE: Analysis Metrics (Clarity, Security, etc.) */}
+                                    {/* Analysis Metrics */}
                                     {optimizationResult && (
                                         <div style={{
                                             flex: 1,
@@ -686,7 +874,7 @@ const PromptOptimizerPage: React.FC = () => {
                                         }}>
                                             {Object.entries(optimizationResult.analyses).map(([key, analysis]: [string, any]) => (
                                                 <div key={key} style={{
-                                                    padding: 'clamp(4px, 0.6vw, 10px)', // FLEXIBLE: Responsive padding // RESPONSIVE: Better padding on large screens
+                                                    padding: 'clamp(4px, 0.6vw, 10px)',
                                                     background: 'rgba(139, 156, 247, 0.05)',
                                                     borderRadius: '4px',
                                                     border: '1px solid rgba(139, 156, 247, 0.15)',
@@ -699,7 +887,7 @@ const PromptOptimizerPage: React.FC = () => {
                                                         marginBottom: '1px'
                                                     }}>
                                                         <span style={{
-                                                            fontSize: 'clamp(8px, 0.8vw, 12px)', // FLEXIBLE: Responsive text // RESPONSIVE: Readable text
+                                                            fontSize: 'clamp(8px, 0.8vw, 12px)',
                                                             fontWeight: '600',
                                                             color: '#4a5568',
                                                             textTransform: 'capitalize'
@@ -707,7 +895,7 @@ const PromptOptimizerPage: React.FC = () => {
                                                             {key}
                                                         </span>
                                                         <span style={{
-                                                            fontSize: 'clamp(9px, 1vw, 14px)', // FLEXIBLE: Responsive scores // RESPONSIVE: Readable scores
+                                                            fontSize: 'clamp(9px, 1vw, 14px)',
                                                             fontWeight: '700',
                                                             color: getScoreColor(analysis.score || 0)
                                                         }}>
@@ -723,20 +911,20 @@ const PromptOptimizerPage: React.FC = () => {
                                     )}
                                 </div>
 
-                                {/* BOTTOM: Token Analysis - MORE SPACE */}
+                                {/* Token Analysis */}
                                 {optimizationResult && (
                                     <div style={{
                                         background: 'linear-gradient(135deg, #e0f7fa 0%, #e1f5fe 100%)',
                                         border: '1px solid rgba(79, 172, 254, 0.3)',
                                         borderRadius: '6px',
-                                        padding: window.innerWidth > 1400 ? '16px' : '12px', // RESPONSIVE: Better padding
+                                        padding: window.innerWidth > 1400 ? '16px' : '12px',
                                         flex: 1,
-                                        minHeight: window.innerWidth > 1400 ? '100px' : '80px', // RESPONSIVE: More space on larger screens
+                                        minHeight: window.innerWidth > 1400 ? '100px' : '80px',
                                         display: 'flex',
                                         flexDirection: 'column'
                                     }}>
                                         <div style={{
-                                            fontSize: window.innerWidth > 1400 ? '13px' : '11px', // RESPONSIVE: Readable title
+                                            fontSize: window.innerWidth > 1400 ? '13px' : '11px',
                                             fontWeight: '600',
                                             color: '#1e40af',
                                             marginBottom: '10px'
@@ -746,22 +934,22 @@ const PromptOptimizerPage: React.FC = () => {
                                         <div style={{
                                             display: 'grid',
                                             gridTemplateColumns: '1fr 1fr 1fr',
-                                            gap: window.innerWidth > 1400 ? '12px' : '8px', // RESPONSIVE: Better spacing
+                                            gap: window.innerWidth > 1400 ? '12px' : '8px',
                                             flex: 1
                                         }}>
                                             <div style={{
                                                 textAlign: 'center',
-                                                padding: window.innerWidth > 1400 ? '16px' : '12px', // RESPONSIVE: Better padding
+                                                padding: window.innerWidth > 1400 ? '16px' : '12px',
                                                 background: 'white',
                                                 borderRadius: '6px',
                                                 boxShadow: '0 2px 6px rgba(79, 172, 254, 0.2)',
                                                 display: 'flex',
                                                 flexDirection: 'column',
                                                 justifyContent: 'center',
-                                                minHeight: window.innerWidth > 1400 ? '70px' : '55px' // RESPONSIVE: Taller on large screens
+                                                minHeight: window.innerWidth > 1400 ? '70px' : '55px'
                                             }}>
                                                 <div style={{
-                                                    fontSize: window.innerWidth > 1400 ? '22px' : '18px', // RESPONSIVE: Much larger on big screens
+                                                    fontSize: window.innerWidth > 1400 ? '22px' : '18px',
                                                     fontWeight: '700',
                                                     marginBottom: '6px',
                                                     color: '#1e40af'
@@ -772,17 +960,17 @@ const PromptOptimizerPage: React.FC = () => {
                                             </div>
                                             <div style={{
                                                 textAlign: 'center',
-                                                padding: 'clamp(0.75rem, 1.2vw, 1.5rem)', // FLEXIBLE: Responsive padding
+                                                padding: 'clamp(0.75rem, 1.2vw, 1.5rem)',
                                                 background: 'white',
                                                 borderRadius: '6px',
                                                 boxShadow: '0 2px 6px rgba(79, 172, 254, 0.2)',
                                                 display: 'flex',
                                                 flexDirection: 'column',
                                                 justifyContent: 'center',
-                                                minHeight: 'clamp(50px, 8vh, 80px)' // FLEXIBLE: Responsive height
+                                                minHeight: 'clamp(50px, 8vh, 80px)'
                                             }}>
                                                 <div style={{
-                                                    fontSize: 'clamp(16px, 2vw, 26px)', // FLEXIBLE: Large responsive numbers
+                                                    fontSize: 'clamp(16px, 2vw, 26px)',
                                                     fontWeight: '700',
                                                     marginBottom: 'clamp(0.25rem, 0.5vh, 0.5rem)',
                                                     color: '#1e40af'
@@ -818,7 +1006,7 @@ const PromptOptimizerPage: React.FC = () => {
                             </div>
                         </div>
 
-                        {/* OPTIMIZED PROMPT - TAKES REMAINING SPACE */}
+                        {/* OPTIMIZED PROMPT */}
                         <div style={{
                             background: 'linear-gradient(135deg, #e0f2fe 0%, #e1f5fe 50%, #f0f9ff 100%)',
                             borderRadius: '8px',
@@ -880,7 +1068,7 @@ const PromptOptimizerPage: React.FC = () => {
                                     ))}
                                 </div>
 
-                                {/* Prompt Display - FLEXIBLE HEIGHT */}
+                                {/* Prompt Display */}
                                 <div style={{
                                     background: 'linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%)',
                                     border: '1px solid rgba(79, 172, 254, 0.2)',
@@ -918,37 +1106,554 @@ const PromptOptimizerPage: React.FC = () => {
                                     {getVersionContent()}
                                 </div>
 
-                                {/* Action Buttons */}
+                                {/* ENHANCED Action Buttons */}
                                 <div style={{
                                     display: 'grid',
-                                    gridTemplateColumns: '1fr 1fr 1fr',
+                                    gridTemplateColumns: optimizationResult ? '1fr 1fr 1fr' : '1fr',
                                     gap: '4px',
                                     flexShrink: 0
                                 }}>
-                                    {['💾 Save', '📤 Export', '🔄 Versions'].map((label) => (
-                                        <button
-                                            key={label}
-                                            style={{
-                                                padding: '4px 6px',
-                                                background: 'linear-gradient(135deg, #f8fafc, #f1f5f9)',
-                                                border: '1px solid rgba(79, 172, 254, 0.2)',
-                                                borderRadius: '3px',
-                                                fontSize: '8px',
-                                                fontWeight: '500',
-                                                color: '#1e40af',
-                                                cursor: 'pointer',
-                                                textAlign: 'center'
-                                            }}
-                                        >
-                                            {label}
-                                        </button>
-                                    ))}
+                                    {optimizationResult ? (
+                                        <>
+                                            <button
+                                                onClick={handleSaveToLibrary}
+                                                disabled={isSavingToLibrary}
+                                                style={{
+                                                    padding: '6px 8px',
+                                                    background: isSavingToLibrary
+                                                        ? 'linear-gradient(135deg, #9ca3af, #6b7280)'
+                                                        : 'linear-gradient(135deg, #10b981, #059669)',
+                                                    border: 'none',
+                                                    borderRadius: '4px',
+                                                    fontSize: '8px',
+                                                    fontWeight: '600',
+                                                    color: 'white',
+                                                    cursor: isSavingToLibrary ? 'not-allowed' : 'pointer',
+                                                    textAlign: 'center',
+                                                    boxShadow: '0 2px 4px rgba(16, 185, 129, 0.3)',
+                                                    display: 'flex',
+                                                    alignItems: 'center',
+                                                    justifyContent: 'center',
+                                                    gap: '2px'
+                                                }}
+                                            >
+                                                {isSavingToLibrary ? '⏳' : '💾'} {isSavingToLibrary ? 'Saving...' : 'Save to Library'}
+                                            </button>
+                                            <button
+                                                style={{
+                                                    padding: '4px 6px',
+                                                    background: 'linear-gradient(135deg, #f8fafc, #f1f5f9)',
+                                                    border: '1px solid rgba(79, 172, 254, 0.2)',
+                                                    borderRadius: '3px',
+                                                    fontSize: '8px',
+                                                    fontWeight: '500',
+                                                    color: '#1e40af',
+                                                    cursor: 'pointer',
+                                                    textAlign: 'center'
+                                                }}
+                                            >
+                                                📤 Export
+                                            </button>
+                                            <button
+                                                style={{
+                                                    padding: '4px 6px',
+                                                    background: 'linear-gradient(135deg, #f8fafc, #f1f5f9)',
+                                                    border: '1px solid rgba(79, 172, 254, 0.2)',
+                                                    borderRadius: '3px',
+                                                    fontSize: '8px',
+                                                    fontWeight: '500',
+                                                    color: '#1e40af',
+                                                    cursor: 'pointer',
+                                                    textAlign: 'center'
+                                                }}
+                                            >
+                                                🔄 Versions
+                                            </button>
+                                        </>
+                                    ) : (
+                                        <div style={{
+                                            padding: '8px',
+                                            textAlign: 'center',
+                                            color: '#6b7280',
+                                            fontSize: '10px',
+                                            fontStyle: 'italic'
+                                        }}>
+                                            Optimize a prompt to unlock actions
+                                        </div>
+                                    )}
                                 </div>
                             </div>
                         </div>
                     </div>
                 </div>
             </div>
+
+            {/* TEMPLATE LIBRARY MODAL */}
+            {showTemplateLibrary && (
+                <div style={{
+                    position: 'fixed',
+                    top: 0,
+                    left: 0,
+                    right: 0,
+                    bottom: 0,
+                    background: 'rgba(0, 0, 0, 0.5)',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    zIndex: 1000,
+                    padding: '20px'
+                }}>
+                    <div style={{
+                        background: 'white',
+                        borderRadius: '12px',
+                        maxWidth: '800px',
+                        width: '100%',
+                        maxHeight: '80vh',
+                        overflow: 'hidden',
+                        boxShadow: '0 20px 60px rgba(0, 0, 0, 0.3)',
+                        display: 'flex',
+                        flexDirection: 'column'
+                    }}>
+                        {/* Header */}
+                        <div style={{
+                            padding: '20px 24px',
+                            borderBottom: '1px solid #e5e7eb',
+                            display: 'flex',
+                            justifyContent: 'space-between',
+                            alignItems: 'center',
+                            background: 'linear-gradient(135deg, #667eea, #764ba2)',
+                            color: 'white'
+                        }}>
+                            <div>
+                                <h3 style={{ margin: 0, fontSize: '18px', fontWeight: '700' }}>
+                                    📚 Featured Templates
+                                </h3>
+                                <p style={{ margin: '4px 0 0 0', fontSize: '12px', opacity: 0.9 }}>
+                                    Select a template to import into the editor
+                                </p>
+                            </div>
+                            <button
+                                onClick={() => setShowTemplateLibrary(false)}
+                                style={{
+                                    background: 'rgba(255, 255, 255, 0.2)',
+                                    border: 'none',
+                                    borderRadius: '4px',
+                                    color: 'white',
+                                    fontSize: '16px',
+                                    cursor: 'pointer',
+                                    padding: '4px 8px'
+                                }}
+                            >
+                                ✕
+                            </button>
+                        </div>
+
+                        {/* Content */}
+                        <div style={{
+                            padding: '20px',
+                            overflowY: 'auto',
+                            flex: 1
+                        }}>
+                            {loadingTemplates ? (
+                                <div style={{
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    justifyContent: 'center',
+                                    height: '200px',
+                                    color: '#6b7280',
+                                    fontSize: '14px'
+                                }}>
+                                    ⏳ Loading templates...
+                                </div>
+                            ) : featuredTemplates.length === 0 ? (
+                                <div style={{
+                                    display: 'flex',
+                                    flexDirection: 'column',
+                                    alignItems: 'center',
+                                    justifyContent: 'center',
+                                    height: '200px',
+                                    color: '#6b7280',
+                                    fontSize: '14px',
+                                    textAlign: 'center'
+                                }}>
+                                    <div style={{ fontSize: '32px', marginBottom: '12px' }}>📭</div>
+                                    <div>No featured templates available</div>
+                                    <div style={{ fontSize: '12px', marginTop: '4px' }}>
+                                        Create and save some prompts first!
+                                    </div>
+                                </div>
+                            ) : (
+                                <div style={{
+                                    display: 'grid',
+                                    gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))',
+                                    gap: '16px'
+                                }}>
+                                    {featuredTemplates.map((template) => (
+                                        <div
+                                            key={template.id}
+                                            style={{
+                                                background: 'linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%)',
+                                                border: '1px solid #e5e7eb',
+                                                borderRadius: '8px',
+                                                padding: '16px',
+                                                cursor: 'pointer',
+                                                transition: 'all 0.2s ease',
+                                                position: 'relative'
+                                            }}
+                                            onMouseEnter={(e) => {
+                                                e.currentTarget.style.transform = 'translateY(-2px)';
+                                                e.currentTarget.style.boxShadow = '0 8px 24px rgba(0, 0, 0, 0.12)';
+                                            }}
+                                            onMouseLeave={(e) => {
+                                                e.currentTarget.style.transform = 'translateY(0)';
+                                                e.currentTarget.style.boxShadow = 'none';
+                                            }}
+                                        >
+                                            {/* Category Badge */}
+                                            <div style={{
+                                                position: 'absolute',
+                                                top: '12px',
+                                                right: '12px',
+                                                background: template.category === 'AI Compliance' ? '#dc2626' :
+                                                    template.category === 'Marketing' ? '#667eea' : '#8b5cf6',
+                                                color: 'white',
+                                                padding: '2px 6px',
+                                                borderRadius: '10px',
+                                                fontSize: '10px',
+                                                fontWeight: '600'
+                                            }}>
+                                                {template.category}
+                                            </div>
+
+                                            {/* Title */}
+                                            <h4 style={{
+                                                margin: '0 0 8px 0',
+                                                fontSize: '14px',
+                                                fontWeight: '600',
+                                                color: '#1f2937',
+                                                paddingRight: '60px'
+                                            }}>
+                                                {template.title}
+                                            </h4>
+
+                                            {/* Content Preview */}
+                                            <div style={{
+                                                background: '#f8fafc',
+                                                border: '1px solid #e2e8f0',
+                                                borderRadius: '4px',
+                                                padding: '8px',
+                                                fontSize: '11px',
+                                                fontFamily: "'SF Mono', Monaco, Consolas, monospace",
+                                                color: '#374151',
+                                                lineHeight: '1.4',
+                                                marginBottom: '12px',
+                                                maxHeight: '80px',
+                                                overflow: 'hidden',
+                                                position: 'relative'
+                                            }}>
+                                                {template.content}
+                                                {template.content.length > 150 && (
+                                                    <div style={{
+                                                        position: 'absolute',
+                                                        bottom: 0,
+                                                        right: 0,
+                                                        background: 'linear-gradient(to right, transparent, #f8fafc)',
+                                                        padding: '0 8px',
+                                                        fontSize: '10px',
+                                                        color: '#6b7280'
+                                                    }}>
+                                                        ...
+                                                    </div>
+                                                )}
+                                            </div>
+
+                                            {/* Tags */}
+                                            <div style={{
+                                                display: 'flex',
+                                                gap: '4px',
+                                                marginBottom: '12px',
+                                                flexWrap: 'wrap'
+                                            }}>
+                                                {template.tags?.slice(0, 3).map((tag: string) => (
+                                                    <span
+                                                        key={tag}
+                                                        style={{
+                                                            background: '#e5e7eb',
+                                                            color: '#6b7280',
+                                                            padding: '2px 6px',
+                                                            borderRadius: '10px',
+                                                            fontSize: '10px',
+                                                            fontWeight: '500'
+                                                        }}
+                                                    >
+                                                        #{tag}
+                                                    </span>
+                                                ))}
+                                            </div>
+
+                                            {/* Stats and Import Button */}
+                                            <div style={{
+                                                display: 'flex',
+                                                justifyContent: 'space-between',
+                                                alignItems: 'center'
+                                            }}>
+                                                <span style={{
+                                                    fontSize: '11px',
+                                                    color: '#6b7280'
+                                                }}>
+                                                    Used {template.usage_count || 0} times
+                                                </span>
+                                                <button
+                                                    onClick={() => handleImportTemplate(template)}
+                                                    style={{
+                                                        background: 'linear-gradient(135deg, #10b981, #059669)',
+                                                        border: 'none',
+                                                        borderRadius: '4px',
+                                                        color: 'white',
+                                                        padding: '6px 12px',
+                                                        fontSize: '11px',
+                                                        fontWeight: '600',
+                                                        cursor: 'pointer',
+                                                        display: 'flex',
+                                                        alignItems: 'center',
+                                                        gap: '4px',
+                                                        boxShadow: '0 2px 4px rgba(16, 185, 129, 0.3)'
+                                                    }}
+                                                >
+                                                    📥 Import
+                                                </button>
+                                            </div>
+                                        </div>
+                                    ))}
+                                </div>
+                            )}
+                        </div>
+
+                        {/* Footer */}
+                        <div style={{
+                            padding: '16px 24px',
+                            borderTop: '1px solid #e5e7eb',
+                            background: '#f9fafb',
+                            textAlign: 'center'
+                        }}>
+                            <button
+                                onClick={() => router.push('/eu_act/prompt-library')}
+                                style={{
+                                    background: 'transparent',
+                                    border: '1px solid #667eea',
+                                    borderRadius: '6px',
+                                    color: '#667eea',
+                                    padding: '8px 16px',
+                                    fontSize: '12px',
+                                    fontWeight: '600',
+                                    cursor: 'pointer',
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    gap: '4px',
+                                    margin: '0 auto'
+                                }}
+                            >
+                                🔗 Open Full Library
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {/* SAVE TO LIBRARY MODAL */}
+            {showSaveModal && (
+                <div style={{
+                    position: 'fixed',
+                    top: 0,
+                    left: 0,
+                    right: 0,
+                    bottom: 0,
+                    background: 'rgba(0, 0, 0, 0.5)',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    zIndex: 1000,
+                    padding: '20px'
+                }}>
+                    <div style={{
+                        background: 'white',
+                        borderRadius: '12px',
+                        padding: '24px',
+                        maxWidth: '500px',
+                        width: '100%',
+                        boxShadow: '0 20px 60px rgba(0, 0, 0, 0.3)'
+                    }}>
+                        <div style={{
+                            display: 'flex',
+                            justifyContent: 'space-between',
+                            alignItems: 'center',
+                            marginBottom: '20px'
+                        }}>
+                            <h3 style={{ margin: 0, fontSize: '18px', fontWeight: '700', color: '#1f2937' }}>
+                                Save to Template Library
+                            </h3>
+                            <button
+                                onClick={() => setShowSaveModal(false)}
+                                style={{
+                                    background: 'none',
+                                    border: 'none',
+                                    fontSize: '20px',
+                                    cursor: 'pointer',
+                                    color: '#6b7280'
+                                }}
+                            >
+                                ×
+                            </button>
+                        </div>
+
+                        <div style={{ marginBottom: '16px' }}>
+                            <label style={{ display: 'block', fontSize: '14px', fontWeight: '600', marginBottom: '6px', color: '#374151' }}>
+                                Template Title *
+                            </label>
+                            <input
+                                type="text"
+                                value={saveToLibraryData.title}
+                                onChange={(e) => setSaveToLibraryData(prev => ({ ...prev, title: e.target.value }))}
+                                placeholder="Enter template title"
+                                style={{
+                                    width: '100%',
+                                    padding: '10px 12px',
+                                    border: '2px solid #e5e7eb',
+                                    borderRadius: '6px',
+                                    fontSize: '14px',
+                                    boxSizing: 'border-box'
+                                }}
+                            />
+                        </div>
+
+                        <div style={{ marginBottom: '16px' }}>
+                            <label style={{ display: 'block', fontSize: '14px', fontWeight: '600', marginBottom: '6px', color: '#374151' }}>
+                                Description
+                            </label>
+                            <textarea
+                                value={saveToLibraryData.description}
+                                onChange={(e) => setSaveToLibraryData(prev => ({ ...prev, description: e.target.value }))}
+                                placeholder="Describe what this template does"
+                                rows={3}
+                                style={{
+                                    width: '100%',
+                                    padding: '10px 12px',
+                                    border: '2px solid #e5e7eb',
+                                    borderRadius: '6px',
+                                    fontSize: '14px',
+                                    boxSizing: 'border-box',
+                                    resize: 'vertical'
+                                }}
+                            />
+                        </div>
+
+                        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px', marginBottom: '16px' }}>
+                            <div>
+                                <label style={{ display: 'block', fontSize: '14px', fontWeight: '600', marginBottom: '6px', color: '#374151' }}>
+                                    Category
+                                </label>
+                                <select
+                                    value={saveToLibraryData.category}
+                                    onChange={(e) => setSaveToLibraryData(prev => ({ ...prev, category: e.target.value }))}
+                                    style={{
+                                        width: '100%',
+                                        padding: '10px 12px',
+                                        border: '2px solid #e5e7eb',
+                                        borderRadius: '6px',
+                                        fontSize: '14px',
+                                        boxSizing: 'border-box'
+                                    }}
+                                >
+                                    <option value="AI Compliance">AI Compliance</option>
+                                    <option value="Risk Assessment">Risk Assessment</option>
+                                    <option value="Marketing Copy">Marketing Copy</option>
+                                    <option value="Code Generation">Code Generation</option>
+                                    <option value="Documentation">Documentation</option>
+                                    <option value="General">General</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label style={{ display: 'block', fontSize: '14px', fontWeight: '600', marginBottom: '6px', color: '#374151' }}>
+                                    Tags
+                                </label>
+                                <input
+                                    type="text"
+                                    value={saveToLibraryData.tags}
+                                    onChange={(e) => setSaveToLibraryData(prev => ({ ...prev, tags: e.target.value }))}
+                                    placeholder="optimized, ai-compliance"
+                                    style={{
+                                        width: '100%',
+                                        padding: '10px 12px',
+                                        border: '2px solid #e5e7eb',
+                                        borderRadius: '6px',
+                                        fontSize: '14px',
+                                        boxSizing: 'border-box'
+                                    }}
+                                />
+                            </div>
+                        </div>
+
+                        <div style={{ marginBottom: '20px' }}>
+                            <label style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '14px', color: '#374151', marginBottom: '8px' }}>
+                                <input
+                                    type="checkbox"
+                                    checked={saveToLibraryData.is_featured}
+                                    onChange={(e) => setSaveToLibraryData(prev => ({ ...prev, is_featured: e.target.checked }))}
+                                />
+                                Add to Featured Templates (recommended for optimized prompts)
+                            </label>
+                            <label style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '14px', color: '#374151' }}>
+                                <input
+                                    type="checkbox"
+                                    checked={saveToLibraryData.is_public}
+                                    onChange={(e) => setSaveToLibraryData(prev => ({ ...prev, is_public: e.target.checked }))}
+                                />
+                                Make template public
+                            </label>
+                        </div>
+
+                        <div style={{ display: 'flex', gap: '12px', justifyContent: 'flex-end' }}>
+                            <button
+                                onClick={() => setShowSaveModal(false)}
+                                style={{
+                                    padding: '10px 20px',
+                                    background: 'transparent',
+                                    border: '2px solid #e5e7eb',
+                                    borderRadius: '6px',
+                                    color: '#6b7280',
+                                    fontSize: '14px',
+                                    fontWeight: '600',
+                                    cursor: 'pointer'
+                                }}
+                            >
+                                Cancel
+                            </button>
+                            <button
+                                onClick={confirmSaveToLibrary}
+                                disabled={isSavingToLibrary || !saveToLibraryData.title.trim()}
+                                style={{
+                                    padding: '10px 20px',
+                                    background: isSavingToLibrary
+                                        ? 'linear-gradient(135deg, #9ca3af, #6b7280)'
+                                        : 'linear-gradient(135deg, #10b981, #059669)',
+                                    border: 'none',
+                                    borderRadius: '6px',
+                                    color: 'white',
+                                    fontSize: '14px',
+                                    fontWeight: '600',
+                                    cursor: isSavingToLibrary || !saveToLibraryData.title.trim() ? 'not-allowed' : 'pointer',
+                                    opacity: isSavingToLibrary || !saveToLibraryData.title.trim() ? 0.6 : 1,
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    gap: '6px'
+                                }}
+                            >
+                                {isSavingToLibrary ? '⏳ Saving...' : '📚 Save to Library'}
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
         </div>
     );
 };
