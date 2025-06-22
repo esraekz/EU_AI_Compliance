@@ -5,6 +5,8 @@ import Layout from '../../../components/Layout/Layout';
 import { aiSystemsApi } from '../../../services/api';
 import Step1BasicInfo from '../WizardSteps/Step1BasicInfo';
 import Step2PurposeAnalysis from '../WizardSteps/Step2PurposeAnalysis';
+import Step3RiskAssessment from '../WizardSteps/Step3RiskAssessment';
+import Step4ResultsClassification from '../WizardSteps/Step4ResultsClassification';
 
 
 const AssessmentWizardPage: React.FC = () => {
@@ -121,7 +123,6 @@ const AssessmentWizardPage: React.FC = () => {
                     padding: '40px',
                     boxShadow: '0 2px 8px rgba(0,0,0,0.1)'
                 }}>
-                    // Update the wizard content section:
                     {currentStep === 1 && (
                         <Step1BasicInfo
                             systemId={systemId as string}
@@ -157,33 +158,33 @@ const AssessmentWizardPage: React.FC = () => {
                         />
                     )}
 
-                    {currentStep > 2 && (
-                        <div style={{ textAlign: 'center', padding: '40px', color: '#666' }}>
-                            <h3>Step {currentStep}: {getStepTitle(currentStep)}</h3>
-                            <p style={{ marginTop: '16px' }}>
-                                Step 3 and beyond will be implemented next.
-                            </p>
-                            <button
-                                onClick={() => setCurrentStep(2)}
-                                style={{
-                                    padding: '8px 16px',
-                                    backgroundColor: '#6030c9',
-                                    color: 'white',
-                                    border: 'none',
-                                    borderRadius: '6px',
-                                    cursor: 'pointer',
-                                    marginTop: '16px'
-                                }}
-                            >
-                                ← Back to Step 2
-                            </button>
-                        </div>
+                    {currentStep === 3 && (
+                        <Step3RiskAssessment
+                            systemId={systemId as string}
+                            initialData={assessment ? {
+                                prohibited_practices: assessment.prohibited_practices,
+                                safety_component: assessment.safety_component || '',
+                                impact_level: assessment.impact_level || ''
+                            } : undefined}
+                            onNext={(data) => {
+                                console.log('Step 3 completed with data:', data);
+                                setCurrentStep(4);
+                                loadSystemData(systemId as string);
+                            }}
+                            onBack={() => setCurrentStep(2)}
+                            loading={loading}
+                        />
                     )}
 
-
+                    {currentStep === 4 && (
+                        <Step4ResultsClassification
+                            systemId={systemId as string}
+                            onBack={() => setCurrentStep(3)}
+                            onComplete={() => router.push('/eu_act/risk-assessment')}
+                            loading={loading}
+                        />
+                    )}
                 </div>
-
-
             </div>
         </Layout>
     );
