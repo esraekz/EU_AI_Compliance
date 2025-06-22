@@ -3,6 +3,9 @@ import { useRouter } from 'next/router';
 import React, { useEffect, useState } from 'react';
 import Layout from '../../../components/Layout/Layout';
 import { aiSystemsApi } from '../../../services/api';
+import Step1BasicInfo from '../WizardSteps/Step1BasicInfo';
+import Step2PurposeAnalysis from '../WizardSteps/Step2PurposeAnalysis';
+
 
 const AssessmentWizardPage: React.FC = () => {
     const router = useRouter();
@@ -118,17 +121,69 @@ const AssessmentWizardPage: React.FC = () => {
                     padding: '40px',
                     boxShadow: '0 2px 8px rgba(0,0,0,0.1)'
                 }}>
-                    {/* This is where we'll add the step components */}
-                    <div style={{ textAlign: 'center', padding: '40px', color: '#666' }}>
-                        <h3>Step {currentStep}: {getStepTitle(currentStep)}</h3>
-                        <p style={{ marginTop: '16px' }}>
-                            Assessment wizard components will be implemented here.
-                        </p>
-                        <p style={{ marginTop: '8px', fontSize: '14px' }}>
-                            Current assessment data: {JSON.stringify(assessment, null, 2)}
-                        </p>
-                    </div>
+                    // Update the wizard content section:
+                    {currentStep === 1 && (
+                        <Step1BasicInfo
+                            systemId={systemId as string}
+                            initialData={assessment ? {
+                                system_name: assessment.system_name || '',
+                                system_description: assessment.system_description || '',
+                                development_stage: assessment.development_stage || 'planning'
+                            } : undefined}
+                            onNext={(data) => {
+                                console.log('Step 1 completed with data:', data);
+                                setCurrentStep(2);
+                                loadSystemData(systemId as string);
+                            }}
+                            onBack={() => router.push('/eu_act/risk-assessment')}
+                            loading={loading}
+                        />
+                    )}
+
+                    {currentStep === 2 && (
+                        <Step2PurposeAnalysis
+                            systemId={systemId as string}
+                            initialData={assessment ? {
+                                primary_purpose: assessment.primary_purpose || '',
+                                purpose_details: assessment.purpose_details || ''
+                            } : undefined}
+                            onNext={(data) => {
+                                console.log('Step 2 completed with data:', data);
+                                setCurrentStep(3);
+                                loadSystemData(systemId as string);
+                            }}
+                            onBack={() => setCurrentStep(1)}
+                            loading={loading}
+                        />
+                    )}
+
+                    {currentStep > 2 && (
+                        <div style={{ textAlign: 'center', padding: '40px', color: '#666' }}>
+                            <h3>Step {currentStep}: {getStepTitle(currentStep)}</h3>
+                            <p style={{ marginTop: '16px' }}>
+                                Step 3 and beyond will be implemented next.
+                            </p>
+                            <button
+                                onClick={() => setCurrentStep(2)}
+                                style={{
+                                    padding: '8px 16px',
+                                    backgroundColor: '#6030c9',
+                                    color: 'white',
+                                    border: 'none',
+                                    borderRadius: '6px',
+                                    cursor: 'pointer',
+                                    marginTop: '16px'
+                                }}
+                            >
+                                ← Back to Step 2
+                            </button>
+                        </div>
+                    )}
+
+
                 </div>
+
+
             </div>
         </Layout>
     );
