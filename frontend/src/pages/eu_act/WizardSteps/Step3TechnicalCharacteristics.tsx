@@ -1,11 +1,10 @@
-// src/pages/eu_act/WizardSteps/Step3TechnicalCharacteristics.tsx - Refined Elegant Style
 import React, { useEffect, useState } from 'react';
 import { aiSystemsApi } from '../../../services/api';
 
 interface Step3Data {
     ai_model_type: string;
     model_architecture: string;
-    data_processing_type: string;
+    data_processing: string;
     input_data_types: string[];
     output_types: string[];
     decision_autonomy: string;
@@ -16,7 +15,7 @@ interface Step3Props {
     initialData?: {
         ai_model_type?: string;
         model_architecture?: string;
-        data_processing_type?: string;
+        data_processing?: string;
         input_data_types?: any;
         output_types?: any;
         decision_autonomy?: string;
@@ -36,7 +35,7 @@ const Step3TechnicalCharacteristics: React.FC<Step3Props> = ({
     const [formData, setFormData] = useState<Step3Data>({
         ai_model_type: '',
         model_architecture: '',
-        data_processing_type: '',
+        data_processing: '',
         input_data_types: [],
         output_types: [],
         decision_autonomy: ''
@@ -51,7 +50,7 @@ const Step3TechnicalCharacteristics: React.FC<Step3Props> = ({
             setFormData({
                 ai_model_type: initialData.ai_model_type || '',
                 model_architecture: initialData.model_architecture || '',
-                data_processing_type: initialData.data_processing_type || '',
+                data_processing: initialData.data_processing || '',
                 input_data_types: parseArrayField(initialData.input_data_types) || [],
                 output_types: parseArrayField(initialData.output_types) || [],
                 decision_autonomy: initialData.decision_autonomy || ''
@@ -71,20 +70,6 @@ const Step3TechnicalCharacteristics: React.FC<Step3Props> = ({
         return [];
     };
 
-    const handleArrayChange = (field: keyof Pick<Step3Data, 'input_data_types' | 'output_types'>, value: string, checked: boolean) => {
-        setFormData(prev => ({
-            ...prev,
-            [field]: checked
-                ? [...prev[field], value]
-                : prev[field].filter(item => item !== value)
-        }));
-
-        // Clear error when user makes selection
-        if (errors[field]) {
-            setErrors(prev => ({ ...prev, [field]: '' }));
-        }
-    };
-
     const handleInputChange = (field: keyof Omit<Step3Data, 'input_data_types' | 'output_types'>, value: string) => {
         setFormData(prev => ({
             ...prev,
@@ -100,6 +85,20 @@ const Step3TechnicalCharacteristics: React.FC<Step3Props> = ({
         }
     };
 
+    const handleArrayChange = (field: keyof Pick<Step3Data, 'input_data_types' | 'output_types'>, value: string, checked: boolean) => {
+        setFormData(prev => ({
+            ...prev,
+            [field]: checked
+                ? [...prev[field], value]
+                : prev[field].filter(item => item !== value)
+        }));
+
+        // Clear error when user makes selection
+        if (errors[field]) {
+            setErrors(prev => ({ ...prev, [field]: '' }));
+        }
+    };
+
     const validateForm = (): boolean => {
         const newErrors: Record<string, string> = {};
 
@@ -107,12 +106,8 @@ const Step3TechnicalCharacteristics: React.FC<Step3Props> = ({
             newErrors.ai_model_type = 'Please select the AI model type';
         }
 
-        if (!formData.model_architecture) {
-            newErrors.model_architecture = 'Please specify the model architecture';
-        }
-
-        if (!formData.data_processing_type) {
-            newErrors.data_processing_type = 'Please select data processing type';
+        if (!formData.data_processing) {
+            newErrors.data_processing = 'Please select how the system processes data';
         }
 
         if (formData.input_data_types.length === 0) {
@@ -124,7 +119,7 @@ const Step3TechnicalCharacteristics: React.FC<Step3Props> = ({
         }
 
         if (!formData.decision_autonomy) {
-            newErrors.decision_autonomy = 'Please specify decision autonomy level';
+            newErrors.decision_autonomy = 'Please select the decision autonomy level';
         }
 
         setErrors(newErrors);
@@ -180,63 +175,47 @@ const Step3TechnicalCharacteristics: React.FC<Step3Props> = ({
         }
     };
 
-    const modelTypeOptions = [
-        { value: 'machine_learning', label: 'Machine Learning', description: 'Systems that learn patterns from data using algorithms' },
-        { value: 'rule_based', label: 'Rule-Based System', description: 'Systems that use predefined rules and logic' },
-        { value: 'hybrid', label: 'Hybrid System', description: 'Combination of machine learning and rule-based approaches' },
-        { value: 'generative', label: 'Generative AI', description: 'Systems that create new content (text, images, audio)' }
+    const aiModelOptions = [
+        { value: 'machine_learning', label: 'Machine Learning' },
+        { value: 'rule_based', label: 'Rule-based' },
+        { value: 'hybrid', label: 'Hybrid' },
+        { value: 'generative', label: 'Generative' },
+        { value: 'other', label: 'Other' }
     ];
 
-    const architectureOptions = [
-        { value: 'neural_network', label: 'Neural Network' },
-        { value: 'transformer', label: 'Transformer' },
-        { value: 'decision_tree', label: 'Decision Tree' },
-        { value: 'ensemble', label: 'Ensemble Methods' },
-        { value: 'llm', label: 'Large Language Model' },
-        { value: 'cnn', label: 'Convolutional Neural Network' },
-        { value: 'rnn_lstm', label: 'RNN/LSTM' },
-        { value: 'svm', label: 'Support Vector Machine' },
-        { value: 'other', label: 'Other Architecture' }
-    ];
-
-    const processingOptions = [
-        { value: 'real_time', label: 'Real-Time Processing', description: 'Processes data immediately as it arrives' },
-        { value: 'batch', label: 'Batch Processing', description: 'Processes data in scheduled batches' },
-        { value: 'both', label: 'Both Real-Time and Batch', description: 'Supports both processing modes' }
+    const dataProcessingOptions = [
+        { value: 'real_time', label: 'Real-time', description: 'Processes data immediately as it arrives' },
+        { value: 'batch', label: 'Batch', description: 'Processes data in scheduled batches or groups' }
     ];
 
     const inputDataOptions = [
-        { id: 'text', label: 'Text Data' },
-        { id: 'image', label: 'Images' },
+        { id: 'text', label: 'Text' },
+        { id: 'image', label: 'Image' },
         { id: 'audio', label: 'Audio' },
         { id: 'video', label: 'Video' },
-        { id: 'structured_data', label: 'Structured Data' },
-        { id: 'sensor_data', label: 'Sensor Data' },
-        { id: 'biometric', label: 'Biometric Data' },
-        { id: 'behavioral', label: 'Behavioral Data' }
+        { id: 'biometric', label: 'Biometric' },
+        { id: 'sensor', label: 'Sensor' },
+        { id: 'other', label: 'Other' }
     ];
 
     const outputTypeOptions = [
-        { id: 'classification', label: 'Classification' },
-        { id: 'prediction', label: 'Prediction' },
-        { id: 'recommendation', label: 'Recommendation' },
-        { id: 'generation', label: 'Content Generation' },
-        { id: 'detection', label: 'Detection/Recognition' },
-        { id: 'scoring', label: 'Scoring/Ranking' },
-        { id: 'optimization', label: 'Optimization' },
-        { id: 'decision_support', label: 'Decision Support' }
+        { id: 'scores', label: 'Scores' },
+        { id: 'recommendations', label: 'Recommendations' },
+        { id: 'classifications', label: 'Classifications' },
+        { id: 'decisions', label: 'Decisions' },
+        { id: 'other', label: 'Other' }
     ];
 
-    const autonomyOptions = [
-        { value: 'fully_automated', label: 'Fully Automated', description: 'System makes decisions automatically', riskColor: '#f56565' },
-        { value: 'human_oversight', label: 'Human Oversight', description: 'Human monitors and can intervene', riskColor: '#ed8936' },
-        { value: 'human_approval', label: 'Human Approval Required', description: 'All decisions require human approval', riskColor: '#38a169' }
+    const decisionAutonomyOptions = [
+        { value: 'manual_aid', label: 'Manual aid', description: 'System provides information to assist human decision-makers' },
+        { value: 'partial_automation', label: 'Partial automation', description: 'System makes some decisions but requires human oversight or approval' },
+        { value: 'full_autonomy', label: 'Full autonomy', description: 'System makes decisions independently without human intervention' }
     ];
 
     if (loading) {
         return (
-            <div style={{ textAlign: 'center', padding: '30px' }}>
-                <div style={{ fontSize: '14px', color: '#666' }}>Loading step data...</div>
+            <div style={{ textAlign: 'center', padding: '40px' }}>
+                <div>Loading step data...</div>
             </div>
         );
     }
@@ -244,106 +223,107 @@ const Step3TechnicalCharacteristics: React.FC<Step3Props> = ({
     return (
         <div style={{ maxWidth: '700px', margin: '0 auto' }}>
             {/* Header */}
-            <div style={{ marginBottom: '24px' }}>
-                <h2 style={{ fontSize: '20px', fontWeight: '600', color: '#1a202c', marginBottom: '6px' }}>
+            <div style={{ marginBottom: '30px' }}>
+                <h2 style={{ fontSize: '24px', fontWeight: '600', color: '#1e252e', marginBottom: '8px' }}>
                     Technical Characteristics
                 </h2>
-                <p style={{ color: '#718096', fontSize: '14px', lineHeight: '1.5' }}>
+                <p style={{ color: '#666', fontSize: '16px' }}>
                     Provide technical details about your AI system's architecture and processing capabilities.
                 </p>
             </div>
 
             {/* AI Model Type */}
-            <div style={{ marginBottom: '20px' }}>
-                <label style={{ display: 'block', marginBottom: '8px', fontWeight: '500', color: '#2d3748', fontSize: '14px' }}>
-                    AI Model Type *
-                </label>
-                <div style={{
-                    border: errors.ai_model_type ? '1px solid #f56565' : '1px solid #e2e8f0',
-                    borderRadius: '6px',
-                    backgroundColor: '#f7fafc'
+            <div style={{ marginBottom: '24px' }}>
+                <label style={{
+                    display: 'block',
+                    marginBottom: '8px',
+                    fontWeight: '500',
+                    color: '#333',
+                    fontSize: '16px'
                 }}>
-                    {modelTypeOptions.map((option) => (
-                        <label
-                            key={option.value}
-                            style={{
-                                display: 'flex',
-                                alignItems: 'flex-start',
-                                gap: '10px',
-                                padding: '12px',
-                                cursor: 'pointer',
-                                borderBottom: '1px solid #e2e8f0'
-                            }}
-                        >
-                            <input
-                                type="radio"
-                                name="ai_model_type"
-                                value={option.value}
-                                checked={formData.ai_model_type === option.value}
-                                onChange={(e) => handleInputChange('ai_model_type', e.target.value)}
-                                style={{ marginTop: '2px' }}
-                            />
-                            <div>
-                                <div style={{ fontWeight: '500', color: '#2d3748', fontSize: '13px', marginBottom: '2px' }}>
-                                    {option.label}
-                                </div>
-                                <div style={{ color: '#718096', fontSize: '11px' }}>
-                                    {option.description}
-                                </div>
-                            </div>
-                        </label>
+                    What type of AI model is used? *
+                </label>
+                <select
+                    value={formData.ai_model_type}
+                    onChange={(e) => handleInputChange('ai_model_type', e.target.value)}
+                    style={{
+                        width: '100%',
+                        padding: '12px',
+                        border: `2px solid ${errors.ai_model_type ? '#dc3545' : '#ddd'}`,
+                        borderRadius: '8px',
+                        fontSize: '16px',
+                        backgroundColor: 'white',
+                        cursor: 'pointer',
+                        boxSizing: 'border-box'
+                    }}
+                    onFocus={(e) => e.target.style.borderColor = '#6030c9'}
+                    onBlur={(e) => e.target.style.borderColor = errors.ai_model_type ? '#dc3545' : '#ddd'}
+                >
+                    <option value="">Select AI model type...</option>
+                    {aiModelOptions.map((option) => (
+                        <option key={option.value} value={option.value}>
+                            {option.label}
+                        </option>
                     ))}
-                </div>
+                </select>
                 {errors.ai_model_type && (
-                    <div style={{ color: '#e53e3e', fontSize: '12px', marginTop: '4px' }}>
+                    <div style={{ color: '#dc3545', fontSize: '14px', marginTop: '4px' }}>
                         {errors.ai_model_type}
                     </div>
                 )}
             </div>
 
             {/* Model Architecture */}
-            <div style={{ marginBottom: '20px' }}>
-                <label style={{ display: 'block', marginBottom: '8px', fontWeight: '500', color: '#2d3748', fontSize: '14px' }}>
-                    Model Architecture *
+            <div style={{ marginBottom: '24px' }}>
+                <label style={{
+                    display: 'block',
+                    marginBottom: '8px',
+                    fontWeight: '500',
+                    color: '#333',
+                    fontSize: '16px'
+                }}>
+                    What is the model architecture?
                 </label>
-                <select
+                <input
+                    type="text"
                     value={formData.model_architecture}
                     onChange={(e) => handleInputChange('model_architecture', e.target.value)}
+                    placeholder="e.g., Neural Network, Decision Tree, GPT, BERT, Random Forest..."
                     style={{
                         width: '100%',
-                        padding: '8px 10px',
-                        border: errors.model_architecture ? '1px solid #f56565' : '1px solid #cbd5e0',
-                        borderRadius: '6px',
-                        fontSize: '13px',
-                        backgroundColor: 'white',
-                        cursor: 'pointer'
+                        padding: '12px',
+                        border: '2px solid #ddd',
+                        borderRadius: '8px',
+                        fontSize: '16px',
+                        transition: 'border-color 0.3s ease',
+                        boxSizing: 'border-box'
                     }}
-                >
-                    <option value="">Select architecture...</option>
-                    {architectureOptions.map((option) => (
-                        <option key={option.value} value={option.value}>
-                            {option.label}
-                        </option>
-                    ))}
-                </select>
-                {errors.model_architecture && (
-                    <div style={{ color: '#e53e3e', fontSize: '12px', marginTop: '4px' }}>
-                        {errors.model_architecture}
-                    </div>
-                )}
+                    onFocus={(e) => e.target.style.borderColor = '#6030c9'}
+                    onBlur={(e) => e.target.style.borderColor = '#ddd'}
+                />
+                <div style={{ color: '#666', fontSize: '12px', marginTop: '4px' }}>
+                    Optional: Specific technical architecture or algorithm used
+                </div>
             </div>
 
-            {/* Data Processing Type */}
-            <div style={{ marginBottom: '20px' }}>
-                <label style={{ display: 'block', marginBottom: '8px', fontWeight: '500', color: '#2d3748', fontSize: '14px' }}>
-                    Data Processing Type *
-                </label>
-                <div style={{
-                    border: errors.data_processing_type ? '1px solid #f56565' : '1px solid #e2e8f0',
-                    borderRadius: '6px',
-                    backgroundColor: '#f7fafc'
+            {/* Data Processing */}
+            <div style={{ marginBottom: '24px' }}>
+                <label style={{
+                    display: 'block',
+                    marginBottom: '12px',
+                    fontWeight: '500',
+                    color: '#333',
+                    fontSize: '16px'
                 }}>
-                    {processingOptions.map((option) => (
+                    How does it process data? *
+                </label>
+
+                <div style={{
+                    border: errors.data_processing ? '2px solid #dc3545' : '2px solid #e5e7eb',
+                    borderRadius: '8px',
+                    padding: '16px'
+                }}>
+                    {dataProcessingOptions.map((option) => (
                         <label
                             key={option.value}
                             style={{
@@ -351,49 +331,59 @@ const Step3TechnicalCharacteristics: React.FC<Step3Props> = ({
                                 alignItems: 'flex-start',
                                 gap: '10px',
                                 padding: '12px',
-                                cursor: 'pointer',
-                                borderBottom: '1px solid #e2e8f0'
+                                marginBottom: '8px',
+                                border: `1px solid ${formData.data_processing === option.value ? '#6030c9' : '#e5e7eb'}`,
+                                borderRadius: '6px',
+                                backgroundColor: formData.data_processing === option.value ? '#f8f7ff' : 'white',
+                                cursor: 'pointer'
                             }}
                         >
                             <input
                                 type="radio"
-                                name="data_processing_type"
+                                name="data_processing"
                                 value={option.value}
-                                checked={formData.data_processing_type === option.value}
-                                onChange={(e) => handleInputChange('data_processing_type', e.target.value)}
+                                checked={formData.data_processing === option.value}
+                                onChange={(e) => handleInputChange('data_processing', e.target.value)}
                                 style={{ marginTop: '2px' }}
                             />
                             <div>
-                                <div style={{ fontWeight: '500', color: '#2d3748', fontSize: '13px', marginBottom: '2px' }}>
+                                <div style={{ fontWeight: '600', color: '#333', marginBottom: '4px' }}>
                                     {option.label}
                                 </div>
-                                <div style={{ color: '#718096', fontSize: '11px' }}>
+                                <div style={{ color: '#666', fontSize: '14px' }}>
                                     {option.description}
                                 </div>
                             </div>
                         </label>
                     ))}
                 </div>
-                {errors.data_processing_type && (
-                    <div style={{ color: '#e53e3e', fontSize: '12px', marginTop: '4px' }}>
-                        {errors.data_processing_type}
+
+                {errors.data_processing && (
+                    <div style={{ color: '#dc3545', fontSize: '14px', marginTop: '8px' }}>
+                        {errors.data_processing}
                     </div>
                 )}
             </div>
 
             {/* Input Data Types */}
-            <div style={{ marginBottom: '20px' }}>
-                <label style={{ display: 'block', marginBottom: '8px', fontWeight: '500', color: '#2d3748', fontSize: '14px' }}>
-                    Input Data Types * <span style={{ fontSize: '12px', color: '#718096', fontWeight: 'normal' }}>(Select all that apply)</span>
+            <div style={{ marginBottom: '24px' }}>
+                <label style={{
+                    display: 'block',
+                    marginBottom: '12px',
+                    fontWeight: '500',
+                    color: '#333',
+                    fontSize: '16px'
+                }}>
+                    What types of input data does it use? * <span style={{ fontSize: '14px', color: '#666', fontWeight: 'normal' }}>(Select all that apply)</span>
                 </label>
+
                 <div style={{
-                    border: errors.input_data_types ? '1px solid #f56565' : '1px solid #e2e8f0',
-                    borderRadius: '6px',
-                    backgroundColor: '#f7fafc',
-                    padding: '10px',
+                    border: errors.input_data_types ? '2px solid #dc3545' : '2px solid #e5e7eb',
+                    borderRadius: '8px',
+                    padding: '16px',
                     display: 'grid',
-                    gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))',
-                    gap: '8px'
+                    gridTemplateColumns: 'repeat(auto-fit, minmax(150px, 1fr))',
+                    gap: '12px'
                 }}>
                     {inputDataOptions.map((option) => (
                         <label
@@ -402,11 +392,12 @@ const Step3TechnicalCharacteristics: React.FC<Step3Props> = ({
                                 display: 'flex',
                                 alignItems: 'center',
                                 gap: '8px',
-                                padding: '6px 8px',
+                                padding: '8px 12px',
                                 backgroundColor: 'white',
-                                borderRadius: '4px',
+                                border: '1px solid #e5e7eb',
+                                borderRadius: '6px',
                                 cursor: 'pointer',
-                                fontSize: '12px'
+                                fontSize: '14px'
                             }}
                         >
                             <input
@@ -418,26 +409,33 @@ const Step3TechnicalCharacteristics: React.FC<Step3Props> = ({
                         </label>
                     ))}
                 </div>
+
                 {errors.input_data_types && (
-                    <div style={{ color: '#e53e3e', fontSize: '12px', marginTop: '4px' }}>
+                    <div style={{ color: '#dc3545', fontSize: '14px', marginTop: '8px' }}>
                         {errors.input_data_types}
                     </div>
                 )}
             </div>
 
             {/* Output Types */}
-            <div style={{ marginBottom: '20px' }}>
-                <label style={{ display: 'block', marginBottom: '8px', fontWeight: '500', color: '#2d3748', fontSize: '14px' }}>
-                    Output Types * <span style={{ fontSize: '12px', color: '#718096', fontWeight: 'normal' }}>(Select all that apply)</span>
+            <div style={{ marginBottom: '24px' }}>
+                <label style={{
+                    display: 'block',
+                    marginBottom: '12px',
+                    fontWeight: '500',
+                    color: '#333',
+                    fontSize: '16px'
+                }}>
+                    What kind of outputs does it produce? * <span style={{ fontSize: '14px', color: '#666', fontWeight: 'normal' }}>(Select all that apply)</span>
                 </label>
+
                 <div style={{
-                    border: errors.output_types ? '1px solid #f56565' : '1px solid #e2e8f0',
-                    borderRadius: '6px',
-                    backgroundColor: '#f7fafc',
-                    padding: '10px',
+                    border: errors.output_types ? '2px solid #dc3545' : '2px solid #e5e7eb',
+                    borderRadius: '8px',
+                    padding: '16px',
                     display: 'grid',
-                    gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))',
-                    gap: '8px'
+                    gridTemplateColumns: 'repeat(auto-fit, minmax(150px, 1fr))',
+                    gap: '12px'
                 }}>
                     {outputTypeOptions.map((option) => (
                         <label
@@ -446,11 +444,12 @@ const Step3TechnicalCharacteristics: React.FC<Step3Props> = ({
                                 display: 'flex',
                                 alignItems: 'center',
                                 gap: '8px',
-                                padding: '6px 8px',
+                                padding: '8px 12px',
                                 backgroundColor: 'white',
-                                borderRadius: '4px',
+                                border: '1px solid #e5e7eb',
+                                borderRadius: '6px',
                                 cursor: 'pointer',
-                                fontSize: '12px'
+                                fontSize: '14px'
                             }}
                         >
                             <input
@@ -462,24 +461,32 @@ const Step3TechnicalCharacteristics: React.FC<Step3Props> = ({
                         </label>
                     ))}
                 </div>
+
                 {errors.output_types && (
-                    <div style={{ color: '#e53e3e', fontSize: '12px', marginTop: '4px' }}>
+                    <div style={{ color: '#dc3545', fontSize: '14px', marginTop: '8px' }}>
                         {errors.output_types}
                     </div>
                 )}
             </div>
 
             {/* Decision Autonomy */}
-            <div style={{ marginBottom: '20px' }}>
-                <label style={{ display: 'block', marginBottom: '8px', fontWeight: '500', color: '#2d3748', fontSize: '14px' }}>
-                    Decision Autonomy Level *
-                </label>
-                <div style={{
-                    border: errors.decision_autonomy ? '1px solid #f56565' : '1px solid #e2e8f0',
-                    borderRadius: '6px',
-                    backgroundColor: '#f7fafc'
+            <div style={{ marginBottom: '24px' }}>
+                <label style={{
+                    display: 'block',
+                    marginBottom: '12px',
+                    fontWeight: '500',
+                    color: '#333',
+                    fontSize: '16px'
                 }}>
-                    {autonomyOptions.map((option) => (
+                    What is the decision autonomy level? *
+                </label>
+
+                <div style={{
+                    border: errors.decision_autonomy ? '2px solid #dc3545' : '2px solid #e5e7eb',
+                    borderRadius: '8px',
+                    padding: '16px'
+                }}>
+                    {decisionAutonomyOptions.map((option) => (
                         <label
                             key={option.value}
                             style={{
@@ -487,8 +494,11 @@ const Step3TechnicalCharacteristics: React.FC<Step3Props> = ({
                                 alignItems: 'flex-start',
                                 gap: '10px',
                                 padding: '12px',
-                                cursor: 'pointer',
-                                borderBottom: '1px solid #e2e8f0'
+                                marginBottom: '8px',
+                                border: `1px solid ${formData.decision_autonomy === option.value ? '#6030c9' : '#e5e7eb'}`,
+                                borderRadius: '6px',
+                                backgroundColor: formData.decision_autonomy === option.value ? '#f8f7ff' : 'white',
+                                cursor: 'pointer'
                             }}
                         >
                             <input
@@ -499,46 +509,37 @@ const Step3TechnicalCharacteristics: React.FC<Step3Props> = ({
                                 onChange={(e) => handleInputChange('decision_autonomy', e.target.value)}
                                 style={{ marginTop: '2px' }}
                             />
-                            <div style={{ flex: 1 }}>
-                                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                                    <span style={{ fontWeight: '500', color: '#2d3748', fontSize: '13px' }}>
-                                        {option.label}
-                                    </span>
-                                    <span style={{
-                                        backgroundColor: option.riskColor,
-                                        color: 'white',
-                                        padding: '2px 6px',
-                                        borderRadius: '10px',
-                                        fontSize: '10px',
-                                        fontWeight: '600'
-                                    }}>
-                                        RISK
-                                    </span>
+                            <div>
+                                <div style={{ fontWeight: '600', color: '#333', marginBottom: '4px' }}>
+                                    {option.label}
                                 </div>
-                                <div style={{ color: '#718096', fontSize: '11px', marginTop: '2px' }}>
+                                <div style={{ color: '#666', fontSize: '14px', lineHeight: '1.4' }}>
                                     {option.description}
                                 </div>
                             </div>
                         </label>
                     ))}
                 </div>
+
                 {errors.decision_autonomy && (
-                    <div style={{ color: '#e53e3e', fontSize: '12px', marginTop: '4px' }}>
+                    <div style={{ color: '#dc3545', fontSize: '14px', marginTop: '8px' }}>
                         {errors.decision_autonomy}
                     </div>
                 )}
+                <div style={{ color: '#666', fontSize: '12px', marginTop: '4px' }}>
+                    Higher autonomy levels may require additional compliance measures
+                </div>
             </div>
 
             {/* Submit Error */}
             {errors.submit && (
                 <div style={{
-                    backgroundColor: '#fed7d7',
-                    border: '1px solid #f56565',
-                    borderRadius: '6px',
-                    padding: '10px 12px',
-                    color: '#c53030',
-                    marginBottom: '16px',
-                    fontSize: '13px'
+                    backgroundColor: '#f8d7da',
+                    border: '1px solid #f5c6cb',
+                    borderRadius: '8px',
+                    padding: '12px',
+                    color: '#721c24',
+                    marginBottom: '24px'
                 }}>
                     {errors.submit}
                 </div>
@@ -549,20 +550,20 @@ const Step3TechnicalCharacteristics: React.FC<Step3Props> = ({
                 display: 'flex',
                 justifyContent: 'space-between',
                 alignItems: 'center',
-                marginTop: '24px',
-                gap: '12px'
+                marginTop: '40px',
+                gap: '16px'
             }}>
                 {/* Left side - Save Draft */}
                 <button
                     onClick={handleSaveDraft}
                     disabled={saving}
                     style={{
-                        padding: '8px 14px',
+                        padding: '10px 20px',
                         backgroundColor: 'transparent',
-                        border: '1px solid #cbd5e0',
-                        borderRadius: '6px',
-                        color: '#718096',
-                        fontSize: '13px',
+                        border: '2px solid #6030c9',
+                        borderRadius: '8px',
+                        color: '#6030c9',
+                        fontSize: '14px',
                         fontWeight: '500',
                         cursor: saving ? 'not-allowed' : 'pointer',
                         opacity: saving ? 0.7 : 1,
@@ -573,24 +574,24 @@ const Step3TechnicalCharacteristics: React.FC<Step3Props> = ({
                 </button>
 
                 {/* Right side - Navigation */}
-                <div style={{ display: 'flex', gap: '8px' }}>
+                <div style={{ display: 'flex', gap: '12px' }}>
                     {onBack && (
                         <button
                             onClick={onBack}
                             disabled={saving}
                             style={{
-                                padding: '8px 16px',
-                                backgroundColor: '#edf2f7',
-                                border: '1px solid #e2e8f0',
-                                borderRadius: '6px',
-                                color: '#4a5568',
-                                fontSize: '13px',
+                                padding: '12px 24px',
+                                backgroundColor: '#f5f5f5',
+                                border: '1px solid #ddd',
+                                borderRadius: '8px',
+                                color: '#666',
+                                fontSize: '16px',
                                 fontWeight: '500',
                                 cursor: saving ? 'not-allowed' : 'pointer',
                                 opacity: saving ? 0.7 : 1
                             }}
                         >
-                            Previous
+                            ← Back
                         </button>
                     )}
 
@@ -598,19 +599,19 @@ const Step3TechnicalCharacteristics: React.FC<Step3Props> = ({
                         onClick={handleSaveAndContinue}
                         disabled={saving}
                         style={{
-                            padding: '8px 20px',
-                            backgroundColor: '#4299e1',
+                            padding: '12px 24px',
+                            backgroundColor: '#6030c9',
                             border: 'none',
-                            borderRadius: '6px',
+                            borderRadius: '8px',
                             color: 'white',
-                            fontSize: '13px',
-                            fontWeight: '500',
+                            fontSize: '16px',
+                            fontWeight: '600',
                             cursor: saving ? 'not-allowed' : 'pointer',
                             opacity: saving ? 0.7 : 1,
                             transition: 'all 0.2s ease'
                         }}
                     >
-                        {saving ? 'Saving...' : 'Continue Assessment'}
+                        {saving ? 'Saving...' : 'Save & Continue →'}
                     </button>
                 </div>
             </div>

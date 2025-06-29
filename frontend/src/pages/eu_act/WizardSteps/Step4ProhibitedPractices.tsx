@@ -1,31 +1,20 @@
-// src/pages/eu_act/WizardSteps/Step4ProhibitedPractices.tsx - Refined Elegant Style
 import React, { useEffect, useState } from 'react';
 import { aiSystemsApi } from '../../../services/api';
 
 interface Step4Data {
-    manipulation_techniques: boolean;
-    manipulation_details: string;
-    vulnerability_exploitation: boolean;
-    vulnerability_details: string;
-    social_scoring: boolean;
-    social_scoring_details: string;
-    biometric_identification: boolean;
-    biometric_details: string;
-    prohibited_practices: string[];
+    subliminal_manipulation: string;
+    vulnerable_groups_exploitation: string;
+    social_scoring_public: string;
+    realtime_biometric_public: string;
 }
 
 interface Step4Props {
     systemId: string;
     initialData?: {
-        manipulation_techniques?: boolean;
-        manipulation_details?: string;
-        vulnerability_exploitation?: boolean;
-        vulnerability_details?: string;
-        social_scoring?: boolean;
-        social_scoring_details?: string;
-        biometric_identification?: boolean;
-        biometric_details?: string;
-        prohibited_practices?: any;
+        subliminal_manipulation?: string;
+        vulnerable_groups_exploitation?: string;
+        social_scoring_public?: string;
+        realtime_biometric_public?: string;
     };
     onNext: (data: Step4Data) => void;
     onBack?: () => void;
@@ -40,94 +29,51 @@ const Step4ProhibitedPractices: React.FC<Step4Props> = ({
     loading = false
 }) => {
     const [formData, setFormData] = useState<Step4Data>({
-        manipulation_techniques: false,
-        manipulation_details: '',
-        vulnerability_exploitation: false,
-        vulnerability_details: '',
-        social_scoring: false,
-        social_scoring_details: '',
-        biometric_identification: false,
-        biometric_details: '',
-        prohibited_practices: []
+        subliminal_manipulation: '',
+        vulnerable_groups_exploitation: '',
+        social_scoring_public: '',
+        realtime_biometric_public: ''
     });
 
     const [saving, setSaving] = useState(false);
     const [errors, setErrors] = useState<Record<string, string>>({});
-    const [showWarning, setShowWarning] = useState(false);
+    const [prohibitedDetected, setProhibitedDetected] = useState(false);
 
     // Pre-fill form when initialData changes
     useEffect(() => {
         if (initialData) {
-            const prohibitedPractices = parseArrayField(initialData.prohibited_practices) || [];
-
             setFormData({
-                manipulation_techniques: initialData.manipulation_techniques || false,
-                manipulation_details: initialData.manipulation_details || '',
-                vulnerability_exploitation: initialData.vulnerability_exploitation || false,
-                vulnerability_details: initialData.vulnerability_details || '',
-                social_scoring: initialData.social_scoring || false,
-                social_scoring_details: initialData.social_scoring_details || '',
-                biometric_identification: initialData.biometric_identification || false,
-                biometric_details: initialData.biometric_details || '',
-                prohibited_practices: prohibitedPractices
+                subliminal_manipulation: initialData.subliminal_manipulation || '',
+                vulnerable_groups_exploitation: initialData.vulnerable_groups_exploitation || '',
+                social_scoring_public: initialData.social_scoring_public || '',
+                realtime_biometric_public: initialData.realtime_biometric_public || ''
             });
         }
     }, [initialData]);
 
-    const parseArrayField = (field: any): string[] => {
-        if (Array.isArray(field)) return field;
-        if (typeof field === 'string') {
-            try {
-                return JSON.parse(field);
-            } catch {
-                return [];
-            }
-        }
-        return [];
-    };
-
-    // Update prohibited practices array when individual practices change
+    // Check for prohibited practices
     useEffect(() => {
-        const practices: string[] = [];
-        if (formData.manipulation_techniques) practices.push('manipulation_techniques');
-        if (formData.vulnerability_exploitation) practices.push('vulnerability_exploitation');
-        if (formData.social_scoring) practices.push('social_scoring');
-        if (formData.biometric_identification) practices.push('biometric_identification');
+        const hasProhibited =
+            formData.subliminal_manipulation === 'yes' ||
+            formData.vulnerable_groups_exploitation === 'yes' ||
+            formData.social_scoring_public === 'yes' ||
+            formData.realtime_biometric_public === 'yes';
 
-        setFormData(prev => ({ ...prev, prohibited_practices: practices }));
-        setShowWarning(practices.length > 0);
+        setProhibitedDetected(hasProhibited);
     }, [
-        formData.manipulation_techniques,
-        formData.vulnerability_exploitation,
-        formData.social_scoring,
-        formData.biometric_identification
+        formData.subliminal_manipulation,
+        formData.vulnerable_groups_exploitation,
+        formData.social_scoring_public,
+        formData.realtime_biometric_public
     ]);
 
-    const handleBooleanChange = (field: keyof Pick<Step4Data, 'manipulation_techniques' | 'vulnerability_exploitation' | 'social_scoring' | 'biometric_identification'>, value: boolean) => {
+    const handleInputChange = (field: keyof Step4Data, value: string) => {
         setFormData(prev => ({
             ...prev,
             [field]: value
         }));
 
-        // Clear associated details if unchecked
-        if (!value) {
-            const detailField = field.replace(/^/, '').replace(/_techniques$|_exploitation$|_scoring$|_identification$/, '_details') as keyof Step4Data;
-            if (detailField.endsWith('_details')) {
-                setFormData(prev => ({
-                    ...prev,
-                    [detailField]: ''
-                }));
-            }
-        }
-    };
-
-    const handleTextChange = (field: keyof Pick<Step4Data, 'manipulation_details' | 'vulnerability_details' | 'social_scoring_details' | 'biometric_details'>, value: string) => {
-        setFormData(prev => ({
-            ...prev,
-            [field]: value
-        }));
-
-        // Clear error when user starts typing
+        // Clear error when user makes selection
         if (errors[field]) {
             setErrors(prev => ({
                 ...prev,
@@ -139,21 +85,20 @@ const Step4ProhibitedPractices: React.FC<Step4Props> = ({
     const validateForm = (): boolean => {
         const newErrors: Record<string, string> = {};
 
-        // Check if details are provided when practices are selected
-        if (formData.manipulation_techniques && !formData.manipulation_details.trim()) {
-            newErrors.manipulation_details = 'Please provide details about manipulation techniques';
+        if (!formData.subliminal_manipulation) {
+            newErrors.subliminal_manipulation = 'Please answer this question';
         }
 
-        if (formData.vulnerability_exploitation && !formData.vulnerability_details.trim()) {
-            newErrors.vulnerability_details = 'Please provide details about vulnerability exploitation';
+        if (!formData.vulnerable_groups_exploitation) {
+            newErrors.vulnerable_groups_exploitation = 'Please answer this question';
         }
 
-        if (formData.social_scoring && !formData.social_scoring_details.trim()) {
-            newErrors.social_scoring_details = 'Please provide details about social scoring';
+        if (!formData.social_scoring_public) {
+            newErrors.social_scoring_public = 'Please answer this question';
         }
 
-        if (formData.biometric_identification && !formData.biometric_details.trim()) {
-            newErrors.biometric_details = 'Please provide details about biometric identification';
+        if (!formData.realtime_biometric_public) {
+            newErrors.realtime_biometric_public = 'Please answer this question';
         }
 
         setErrors(newErrors);
@@ -209,10 +154,33 @@ const Step4ProhibitedPractices: React.FC<Step4Props> = ({
         }
     };
 
+    const questions = [
+        {
+            field: 'subliminal_manipulation' as keyof Step4Data,
+            question: 'Does it use subliminal techniques to manipulate behavior?',
+            description: 'AI systems that deploy subliminal techniques beyond a person\'s consciousness to materially distort behavior in a manner that is likely to cause harm'
+        },
+        {
+            field: 'vulnerable_groups_exploitation' as keyof Step4Data,
+            question: 'Does it exploit vulnerable groups (e.g., children, disabled)?',
+            description: 'AI systems that exploit vulnerabilities of specific groups due to their age, physical or mental disability, or specific social or economic situation'
+        },
+        {
+            field: 'social_scoring_public' as keyof Step4Data,
+            question: 'Is it used for social scoring by public authorities?',
+            description: 'AI systems for evaluation or classification of natural persons by public authorities based on their social behavior or personal characteristics'
+        },
+        {
+            field: 'realtime_biometric_public' as keyof Step4Data,
+            question: 'Does it enable real-time biometric identification in public spaces?',
+            description: 'Real-time remote biometric identification systems in publicly accessible spaces for law enforcement purposes (limited exceptions apply)'
+        }
+    ];
+
     if (loading) {
         return (
-            <div style={{ textAlign: 'center', padding: '30px' }}>
-                <div style={{ fontSize: '14px', color: '#666' }}>Loading step data...</div>
+            <div style={{ textAlign: 'center', padding: '40px' }}>
+                <div>Loading step data...</div>
             </div>
         );
     }
@@ -220,34 +188,34 @@ const Step4ProhibitedPractices: React.FC<Step4Props> = ({
     return (
         <div style={{ maxWidth: '700px', margin: '0 auto' }}>
             {/* Header */}
-            <div style={{ marginBottom: '24px' }}>
-                <h2 style={{ fontSize: '20px', fontWeight: '600', color: '#1a202c', marginBottom: '6px' }}>
-                    Article 5 - Prohibited AI Practices
+            <div style={{ marginBottom: '30px' }}>
+                <h2 style={{ fontSize: '24px', fontWeight: '600', color: '#1e252e', marginBottom: '8px' }}>
+                    Article 5 – Prohibited Practices
                 </h2>
-                <p style={{ color: '#718096', fontSize: '14px', lineHeight: '1.5' }}>
+                <p style={{ color: '#666', fontSize: '16px' }}>
                     These AI practices are prohibited under EU law. If your system uses any of these techniques, it cannot be deployed in the EU.
                 </p>
             </div>
 
             {/* Status Alert */}
-            {showWarning ? (
+            {prohibitedDetected ? (
                 <div style={{
                     backgroundColor: '#fed7d7',
                     border: '1px solid #f56565',
-                    borderRadius: '6px',
-                    padding: '12px 16px',
-                    marginBottom: '20px',
+                    borderRadius: '8px',
+                    padding: '16px',
+                    marginBottom: '24px',
                     display: 'flex',
                     alignItems: 'center',
-                    gap: '10px'
+                    gap: '12px'
                 }}>
-                    <span style={{ fontSize: '16px' }}>⚠️</span>
+                    <span style={{ fontSize: '20px' }}>⚠️</span>
                     <div>
-                        <div style={{ fontWeight: '600', color: '#c53030', fontSize: '13px' }}>
+                        <div style={{ fontWeight: '600', color: '#c53030', fontSize: '16px', marginBottom: '4px' }}>
                             PROHIBITED AI SYSTEM DETECTED
                         </div>
-                        <div style={{ color: '#c53030', fontSize: '12px' }}>
-                            Your system cannot be placed on the EU market
+                        <div style={{ color: '#c53030', fontSize: '14px' }}>
+                            Your system cannot be placed on the EU market due to prohibited practices under Article 5
                         </div>
                     </div>
                 </div>
@@ -255,259 +223,135 @@ const Step4ProhibitedPractices: React.FC<Step4Props> = ({
                 <div style={{
                     backgroundColor: '#f0fff4',
                     border: '1px solid #68d391',
-                    borderRadius: '6px',
-                    padding: '12px 16px',
-                    marginBottom: '20px',
+                    borderRadius: '8px',
+                    padding: '16px',
+                    marginBottom: '24px',
                     display: 'flex',
                     alignItems: 'center',
-                    gap: '10px'
+                    gap: '12px'
                 }}>
-                    <span style={{ fontSize: '16px' }}>✅</span>
+                    <span style={{ fontSize: '20px' }}>✅</span>
                     <div>
-                        <div style={{ fontWeight: '600', color: '#22543d', fontSize: '13px' }}>
+                        <div style={{ fontWeight: '600', color: '#22543d', fontSize: '16px', marginBottom: '4px' }}>
                             No Prohibited Practices Detected
                         </div>
-                        <div style={{ color: '#22543d', fontSize: '12px' }}>
-                            Your system can proceed with assessment
+                        <div style={{ color: '#22543d', fontSize: '14px' }}>
+                            Your system can proceed with the assessment
                         </div>
                     </div>
                 </div>
             )}
 
-            {/* Questions Container */}
+            {/* Questions */}
             <div style={{
                 backgroundColor: '#f7fafc',
                 border: '1px solid #e2e8f0',
                 borderRadius: '8px',
-                padding: '20px'
+                padding: '24px'
             }}>
-                {/* Question 1: Manipulation Techniques */}
-                <div style={{ marginBottom: '20px' }}>
-                    <label style={{
-                        display: 'flex',
-                        alignItems: 'flex-start',
-                        gap: '10px',
-                        cursor: 'pointer',
-                        marginBottom: '12px'
+                {questions.map((item, index) => (
+                    <div key={item.field} style={{
+                        marginBottom: index === questions.length - 1 ? '0' : '24px',
+                        backgroundColor: 'white',
+                        border: '1px solid #e2e8f0',
+                        borderRadius: '8px',
+                        padding: '20px'
                     }}>
-                        <input
-                            type="radio"
-                            name="manipulation_group"
-                            checked={formData.manipulation_techniques}
-                            onChange={(e) => handleBooleanChange('manipulation_techniques', e.target.checked)}
-                            style={{ marginTop: '2px' }}
-                        />
-                        <div>
-                            <div style={{ fontWeight: '500', color: '#2d3748', fontSize: '14px', marginBottom: '4px' }}>
-                                Subliminal techniques or manipulation
-                            </div>
-                            <div style={{ color: '#718096', fontSize: '12px', lineHeight: '1.4' }}>
-                                AI systems that deploy subliminal techniques beyond a person's consciousness or manipulative techniques to materially distort behavior causing harm
-                            </div>
+                        <div style={{ marginBottom: '12px' }}>
+                            <h3 style={{
+                                fontSize: '16px',
+                                fontWeight: '600',
+                                color: '#2d3748',
+                                marginBottom: '8px',
+                                margin: 0
+                            }}>
+                                {item.question} *
+                            </h3>
+                            <p style={{
+                                color: '#718096',
+                                fontSize: '14px',
+                                lineHeight: '1.4',
+                                margin: 0
+                            }}>
+                                {item.description}
+                            </p>
                         </div>
-                    </label>
 
-                    {formData.manipulation_techniques && (
-                        <div style={{ marginLeft: '20px', marginTop: '10px' }}>
-                            <textarea
-                                value={formData.manipulation_details}
-                                onChange={(e) => handleTextChange('manipulation_details', e.target.value)}
-                                placeholder="Describe the manipulation techniques used..."
-                                rows={2}
-                                style={{
-                                    width: '100%',
-                                    padding: '8px 10px',
-                                    border: `1px solid ${errors.manipulation_details ? '#f56565' : '#cbd5e0'}`,
-                                    borderRadius: '4px',
-                                    fontSize: '13px',
-                                    fontFamily: 'inherit',
-                                    resize: 'vertical',
-                                    boxSizing: 'border-box',
-                                    backgroundColor: 'white'
-                                }}
-                            />
-                            {errors.manipulation_details && (
-                                <div style={{ color: '#e53e3e', fontSize: '11px', marginTop: '4px' }}>
-                                    {errors.manipulation_details}
-                                </div>
-                            )}
-                        </div>
-                    )}
-                </div>
+                        <div style={{
+                            display: 'flex',
+                            gap: '16px',
+                            border: errors[item.field] ? '1px solid #f56565' : 'none',
+                            borderRadius: '6px',
+                            padding: errors[item.field] ? '8px' : '0'
+                        }}>
+                            <label style={{
+                                display: 'flex',
+                                alignItems: 'center',
+                                gap: '8px',
+                                padding: '8px 16px',
+                                backgroundColor: formData[item.field] === 'yes' ? '#fed7d7' : '#f7fafc',
+                                border: `1px solid ${formData[item.field] === 'yes' ? '#f56565' : '#e2e8f0'}`,
+                                borderRadius: '6px',
+                                cursor: 'pointer',
+                                fontSize: '14px',
+                                fontWeight: '500'
+                            }}>
+                                <input
+                                    type="radio"
+                                    name={item.field}
+                                    value="yes"
+                                    checked={formData[item.field] === 'yes'}
+                                    onChange={(e) => handleInputChange(item.field, e.target.value)}
+                                />
+                                <span style={{ color: formData[item.field] === 'yes' ? '#c53030' : '#2d3748' }}>
+                                    Yes
+                                </span>
+                            </label>
 
-                {/* Question 2: Vulnerability Exploitation */}
-                <div style={{ marginBottom: '20px' }}>
-                    <label style={{
-                        display: 'flex',
-                        alignItems: 'flex-start',
-                        gap: '10px',
-                        cursor: 'pointer',
-                        marginBottom: '12px'
-                    }}>
-                        <input
-                            type="radio"
-                            name="vulnerability_group"
-                            checked={formData.vulnerability_exploitation}
-                            onChange={(e) => handleBooleanChange('vulnerability_exploitation', e.target.checked)}
-                            style={{ marginTop: '2px' }}
-                        />
-                        <div>
-                            <div style={{ fontWeight: '500', color: '#2d3748', fontSize: '14px', marginBottom: '4px' }}>
-                                Vulnerability exploitation
-                            </div>
-                            <div style={{ color: '#718096', fontSize: '12px', lineHeight: '1.4' }}>
-                                AI systems that exploit vulnerabilities of specific groups (age, disability, social/economic situation) causing harm
-                            </div>
+                            <label style={{
+                                display: 'flex',
+                                alignItems: 'center',
+                                gap: '8px',
+                                padding: '8px 16px',
+                                backgroundColor: formData[item.field] === 'no' ? '#f0fff4' : '#f7fafc',
+                                border: `1px solid ${formData[item.field] === 'no' ? '#68d391' : '#e2e8f0'}`,
+                                borderRadius: '6px',
+                                cursor: 'pointer',
+                                fontSize: '14px',
+                                fontWeight: '500'
+                            }}>
+                                <input
+                                    type="radio"
+                                    name={item.field}
+                                    value="no"
+                                    checked={formData[item.field] === 'no'}
+                                    onChange={(e) => handleInputChange(item.field, e.target.value)}
+                                />
+                                <span style={{ color: formData[item.field] === 'no' ? '#22543d' : '#2d3748' }}>
+                                    No
+                                </span>
+                            </label>
                         </div>
-                    </label>
 
-                    {formData.vulnerability_exploitation && (
-                        <div style={{ marginLeft: '20px', marginTop: '10px' }}>
-                            <textarea
-                                value={formData.vulnerability_details}
-                                onChange={(e) => handleTextChange('vulnerability_details', e.target.value)}
-                                placeholder="Describe how vulnerable groups are exploited..."
-                                rows={2}
-                                style={{
-                                    width: '100%',
-                                    padding: '8px 10px',
-                                    border: `1px solid ${errors.vulnerability_details ? '#f56565' : '#cbd5e0'}`,
-                                    borderRadius: '4px',
-                                    fontSize: '13px',
-                                    fontFamily: 'inherit',
-                                    resize: 'vertical',
-                                    boxSizing: 'border-box',
-                                    backgroundColor: 'white'
-                                }}
-                            />
-                            {errors.vulnerability_details && (
-                                <div style={{ color: '#e53e3e', fontSize: '11px', marginTop: '4px' }}>
-                                    {errors.vulnerability_details}
-                                </div>
-                            )}
-                        </div>
-                    )}
-                </div>
-
-                {/* Question 3: Social Scoring */}
-                <div style={{ marginBottom: '20px' }}>
-                    <label style={{
-                        display: 'flex',
-                        alignItems: 'flex-start',
-                        gap: '10px',
-                        cursor: 'pointer',
-                        marginBottom: '12px'
-                    }}>
-                        <input
-                            type="radio"
-                            name="social_scoring_group"
-                            checked={formData.social_scoring}
-                            onChange={(e) => handleBooleanChange('social_scoring', e.target.checked)}
-                            style={{ marginTop: '2px' }}
-                        />
-                        <div>
-                            <div style={{ fontWeight: '500', color: '#2d3748', fontSize: '14px', marginBottom: '4px' }}>
-                                Social scoring by public authorities
+                        {errors[item.field] && (
+                            <div style={{ color: '#e53e3e', fontSize: '12px', marginTop: '8px' }}>
+                                {errors[item.field]}
                             </div>
-                            <div style={{ color: '#718096', fontSize: '12px', lineHeight: '1.4' }}>
-                                AI systems for social scoring of natural persons by public authorities for general purpose leading to detrimental treatment
-                            </div>
-                        </div>
-                    </label>
-
-                    {formData.social_scoring && (
-                        <div style={{ marginLeft: '20px', marginTop: '10px' }}>
-                            <textarea
-                                value={formData.social_scoring_details}
-                                onChange={(e) => handleTextChange('social_scoring_details', e.target.value)}
-                                placeholder="Describe the social scoring system..."
-                                rows={2}
-                                style={{
-                                    width: '100%',
-                                    padding: '8px 10px',
-                                    border: `1px solid ${errors.social_scoring_details ? '#f56565' : '#cbd5e0'}`,
-                                    borderRadius: '4px',
-                                    fontSize: '13px',
-                                    fontFamily: 'inherit',
-                                    resize: 'vertical',
-                                    boxSizing: 'border-box',
-                                    backgroundColor: 'white'
-                                }}
-                            />
-                            {errors.social_scoring_details && (
-                                <div style={{ color: '#e53e3e', fontSize: '11px', marginTop: '4px' }}>
-                                    {errors.social_scoring_details}
-                                </div>
-                            )}
-                        </div>
-                    )}
-                </div>
-
-                {/* Question 4: Biometric Identification */}
-                <div style={{ marginBottom: '0' }}>
-                    <label style={{
-                        display: 'flex',
-                        alignItems: 'flex-start',
-                        gap: '10px',
-                        cursor: 'pointer',
-                        marginBottom: '12px'
-                    }}>
-                        <input
-                            type="radio"
-                            name="biometric_group"
-                            checked={formData.biometric_identification}
-                            onChange={(e) => handleBooleanChange('biometric_identification', e.target.checked)}
-                            style={{ marginTop: '2px' }}
-                        />
-                        <div>
-                            <div style={{ fontWeight: '500', color: '#2d3748', fontSize: '14px', marginBottom: '4px' }}>
-                                Real-time remote biometric identification
-                            </div>
-                            <div style={{ color: '#718096', fontSize: '12px', lineHeight: '1.4' }}>
-                                Real-time remote biometric identification systems in publicly accessible spaces for law enforcement (limited exceptions)
-                            </div>
-                        </div>
-                    </label>
-
-                    {formData.biometric_identification && (
-                        <div style={{ marginLeft: '20px', marginTop: '10px' }}>
-                            <textarea
-                                value={formData.biometric_details}
-                                onChange={(e) => handleTextChange('biometric_details', e.target.value)}
-                                placeholder="Describe the biometric identification system..."
-                                rows={2}
-                                style={{
-                                    width: '100%',
-                                    padding: '8px 10px',
-                                    border: `1px solid ${errors.biometric_details ? '#f56565' : '#cbd5e0'}`,
-                                    borderRadius: '4px',
-                                    fontSize: '13px',
-                                    fontFamily: 'inherit',
-                                    resize: 'vertical',
-                                    boxSizing: 'border-box',
-                                    backgroundColor: 'white'
-                                }}
-                            />
-                            {errors.biometric_details && (
-                                <div style={{ color: '#e53e3e', fontSize: '11px', marginTop: '4px' }}>
-                                    {errors.biometric_details}
-                                </div>
-                            )}
-                        </div>
-                    )}
-                </div>
+                        )}
+                    </div>
+                ))}
             </div>
 
             {/* Submit Error */}
             {errors.submit && (
                 <div style={{
-                    backgroundColor: '#fed7d7',
-                    border: '1px solid #f56565',
-                    borderRadius: '6px',
-                    padding: '10px 12px',
-                    color: '#c53030',
+                    backgroundColor: '#f8d7da',
+                    border: '1px solid #f5c6cb',
+                    borderRadius: '8px',
+                    padding: '12px',
+                    color: '#721c24',
                     marginTop: '16px',
-                    fontSize: '13px'
+                    fontSize: '14px'
                 }}>
                     {errors.submit}
                 </div>
@@ -518,20 +362,20 @@ const Step4ProhibitedPractices: React.FC<Step4Props> = ({
                 display: 'flex',
                 justifyContent: 'space-between',
                 alignItems: 'center',
-                marginTop: '24px',
-                gap: '12px'
+                marginTop: '40px',
+                gap: '16px'
             }}>
                 {/* Left side - Save Draft */}
                 <button
                     onClick={handleSaveDraft}
                     disabled={saving}
                     style={{
-                        padding: '8px 14px',
+                        padding: '10px 20px',
                         backgroundColor: 'transparent',
-                        border: '1px solid #cbd5e0',
-                        borderRadius: '6px',
-                        color: '#718096',
-                        fontSize: '13px',
+                        border: '2px solid #6030c9',
+                        borderRadius: '8px',
+                        color: '#6030c9',
+                        fontSize: '14px',
                         fontWeight: '500',
                         cursor: saving ? 'not-allowed' : 'pointer',
                         opacity: saving ? 0.7 : 1,
@@ -542,24 +386,24 @@ const Step4ProhibitedPractices: React.FC<Step4Props> = ({
                 </button>
 
                 {/* Right side - Navigation */}
-                <div style={{ display: 'flex', gap: '8px' }}>
+                <div style={{ display: 'flex', gap: '12px' }}>
                     {onBack && (
                         <button
                             onClick={onBack}
                             disabled={saving}
                             style={{
-                                padding: '8px 16px',
-                                backgroundColor: '#edf2f7',
-                                border: '1px solid #e2e8f0',
-                                borderRadius: '6px',
-                                color: '#4a5568',
-                                fontSize: '13px',
+                                padding: '12px 24px',
+                                backgroundColor: '#f5f5f5',
+                                border: '1px solid #ddd',
+                                borderRadius: '8px',
+                                color: '#666',
+                                fontSize: '16px',
                                 fontWeight: '500',
                                 cursor: saving ? 'not-allowed' : 'pointer',
                                 opacity: saving ? 0.7 : 1
                             }}
                         >
-                            Previous
+                            ← Back
                         </button>
                     )}
 
@@ -567,19 +411,19 @@ const Step4ProhibitedPractices: React.FC<Step4Props> = ({
                         onClick={handleSaveAndContinue}
                         disabled={saving}
                         style={{
-                            padding: '8px 20px',
-                            backgroundColor: '#4299e1',
+                            padding: '12px 24px',
+                            backgroundColor: '#6030c9',
                             border: 'none',
-                            borderRadius: '6px',
+                            borderRadius: '8px',
                             color: 'white',
-                            fontSize: '13px',
-                            fontWeight: '500',
+                            fontSize: '16px',
+                            fontWeight: '600',
                             cursor: saving ? 'not-allowed' : 'pointer',
                             opacity: saving ? 0.7 : 1,
                             transition: 'all 0.2s ease'
                         }}
                     >
-                        {saving ? 'Saving...' : 'Continue Assessment'}
+                        {saving ? 'Saving...' : 'Save & Continue →'}
                     </button>
                 </div>
             </div>

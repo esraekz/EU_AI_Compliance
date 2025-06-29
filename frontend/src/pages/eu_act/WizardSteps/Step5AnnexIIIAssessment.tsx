@@ -1,101 +1,116 @@
-// src/pages/eu_act/WizardSteps/Step3DataAssessment.tsx
 import React, { useEffect, useState } from 'react';
 import { aiSystemsApi } from '../../../services/api';
 
-interface Step3Data {
-    data_sources: string[];
-    data_types: string[];
-    personal_data_processing: string;
-    training_data_size: string;
-    data_quality_measures: string[];
-    bias_assessment: string;
-    data_governance: string;
+interface Step5Data {
+    biometric_categorization: string;
+    critical_infrastructure: string;
+    education_vocational: string;
+    employment_hr: string;
+    essential_services: string;
+    law_enforcement: string;
+    migration_asylum: string;
+    justice_democracy: string;
+    profiling_individuals: string;
+    preparatory_only: string;
 }
 
-interface Step3Props {
+interface Step5Props {
     systemId: string;
     initialData?: {
-        data_sources?: any;
-        data_types?: any;
-        personal_data_processing?: string;
-        training_data_size?: string;
-        data_quality_measures?: any;
-        bias_assessment?: string;
-        data_governance?: string;
+        biometric_categorization?: string;
+        critical_infrastructure?: string;
+        education_vocational?: string;
+        employment_hr?: string;
+        essential_services?: string;
+        law_enforcement?: string;
+        migration_asylum?: string;
+        justice_democracy?: string;
+        profiling_individuals?: string;
+        preparatory_only?: string;
     };
-    onNext: (data: Step3Data) => void;
+    onNext: (data: Step5Data) => void;
     onBack?: () => void;
     loading?: boolean;
 }
 
-const Step3DataAssessment: React.FC<Step3Props> = ({
+const Step5AnnexIIIAssessment: React.FC<Step5Props> = ({
     systemId,
     initialData,
     onNext,
     onBack,
     loading = false
 }) => {
-    const [formData, setFormData] = useState<Step3Data>({
-        data_sources: [],
-        data_types: [],
-        personal_data_processing: '',
-        training_data_size: '',
-        data_quality_measures: [],
-        bias_assessment: '',
-        data_governance: ''
+    const [formData, setFormData] = useState<Step5Data>({
+        biometric_categorization: '',
+        critical_infrastructure: '',
+        education_vocational: '',
+        employment_hr: '',
+        essential_services: '',
+        law_enforcement: '',
+        migration_asylum: '',
+        justice_democracy: '',
+        profiling_individuals: '',
+        preparatory_only: ''
     });
 
     const [saving, setSaving] = useState(false);
     const [errors, setErrors] = useState<Record<string, string>>({});
+    const [highRiskDetected, setHighRiskDetected] = useState(false);
 
     // Pre-fill form when initialData changes
     useEffect(() => {
         if (initialData) {
             setFormData({
-                data_sources: parseArrayField(initialData.data_sources) || [],
-                data_types: parseArrayField(initialData.data_types) || [],
-                personal_data_processing: initialData.personal_data_processing || '',
-                training_data_size: initialData.training_data_size || '',
-                data_quality_measures: parseArrayField(initialData.data_quality_measures) || [],
-                bias_assessment: initialData.bias_assessment || '',
-                data_governance: initialData.data_governance || ''
+                biometric_categorization: initialData.biometric_categorization || '',
+                critical_infrastructure: initialData.critical_infrastructure || '',
+                education_vocational: initialData.education_vocational || '',
+                employment_hr: initialData.employment_hr || '',
+                essential_services: initialData.essential_services || '',
+                law_enforcement: initialData.law_enforcement || '',
+                migration_asylum: initialData.migration_asylum || '',
+                justice_democracy: initialData.justice_democracy || '',
+                profiling_individuals: initialData.profiling_individuals || '',
+                preparatory_only: initialData.preparatory_only || ''
             });
         }
     }, [initialData]);
 
-    const parseArrayField = (field: any): string[] => {
-        if (Array.isArray(field)) return field;
-        if (typeof field === 'string') {
-            try {
-                return JSON.parse(field);
-            } catch {
-                return [];
-            }
-        }
-        return [];
-    };
+    // Check for high-risk detection
+    useEffect(() => {
+        const hasHighRiskUses =
+            formData.biometric_categorization === 'yes' ||
+            formData.critical_infrastructure === 'yes' ||
+            formData.education_vocational === 'yes' ||
+            formData.employment_hr === 'yes' ||
+            formData.essential_services === 'yes' ||
+            formData.law_enforcement === 'yes' ||
+            formData.migration_asylum === 'yes' ||
+            formData.justice_democracy === 'yes' ||
+            formData.profiling_individuals === 'yes';
 
-    const handleArrayChange = (field: keyof Pick<Step3Data, 'data_sources' | 'data_types' | 'data_quality_measures'>, value: string, checked: boolean) => {
-        setFormData(prev => ({
-            ...prev,
-            [field]: checked
-                ? [...prev[field], value]
-                : prev[field].filter(item => item !== value)
-        }));
+        // High risk if has uses AND not preparatory only
+        const isHighRisk = hasHighRiskUses && formData.preparatory_only !== 'yes';
+        setHighRiskDetected(isHighRisk);
+    }, [
+        formData.biometric_categorization,
+        formData.critical_infrastructure,
+        formData.education_vocational,
+        formData.employment_hr,
+        formData.essential_services,
+        formData.law_enforcement,
+        formData.migration_asylum,
+        formData.justice_democracy,
+        formData.profiling_individuals,
+        formData.preparatory_only
+    ]);
 
-        // Clear error when user makes selection
-        if (errors[field]) {
-            setErrors(prev => ({ ...prev, [field]: '' }));
-        }
-    };
-
-    const handleInputChange = (field: keyof Omit<Step3Data, 'data_sources' | 'data_types' | 'data_quality_measures'>, value: string) => {
+    const handleInputChange = (field: keyof Step5Data, value: string) => {
         setFormData(prev => ({
             ...prev,
             [field]: value
         }));
 
-        // Clear error when user starts typing
+        // Clear error when user makes selection
         if (errors[field]) {
             setErrors(prev => ({
                 ...prev,
@@ -107,29 +122,12 @@ const Step3DataAssessment: React.FC<Step3Props> = ({
     const validateForm = (): boolean => {
         const newErrors: Record<string, string> = {};
 
-        if (formData.data_sources.length === 0) {
-            newErrors.data_sources = 'Please select at least one data source';
-        }
-
-        if (formData.data_types.length === 0) {
-            newErrors.data_types = 'Please select at least one data type';
-        }
-
-        if (!formData.personal_data_processing) {
-            newErrors.personal_data_processing = 'Please specify personal data processing';
-        }
-
-        if (!formData.training_data_size) {
-            newErrors.training_data_size = 'Please select training data size';
-        }
-
-        if (!formData.bias_assessment) {
-            newErrors.bias_assessment = 'Please answer the bias assessment question';
-        }
-
-        if (!formData.data_governance) {
-            newErrors.data_governance = 'Please specify data governance approach';
-        }
+        // All questions are required
+        Object.keys(formData).forEach((key) => {
+            if (!formData[key as keyof Step5Data]) {
+                newErrors[key] = 'Please answer this question';
+            }
+        });
 
         setErrors(newErrors);
         return Object.keys(newErrors).length === 0;
@@ -145,7 +143,7 @@ const Step3DataAssessment: React.FC<Step3Props> = ({
 
             // Save step data to backend
             await aiSystemsApi.updateAssessmentStep(systemId, {
-                step: 3,
+                step: 5,
                 data: formData
             });
 
@@ -153,7 +151,7 @@ const Step3DataAssessment: React.FC<Step3Props> = ({
             onNext(formData);
 
         } catch (error) {
-            console.error('Error saving Step 3:', error);
+            console.error('Error saving Step 5:', error);
             setErrors({
                 submit: 'Failed to save. Please try again.'
             });
@@ -167,7 +165,7 @@ const Step3DataAssessment: React.FC<Step3Props> = ({
             setSaving(true);
 
             await aiSystemsApi.updateAssessmentStep(systemId, {
-                step: 3,
+                step: 5,
                 data: {
                     ...formData,
                     is_draft: true
@@ -184,64 +182,57 @@ const Step3DataAssessment: React.FC<Step3Props> = ({
         }
     };
 
-    const dataSourceOptions = [
-        { id: 'internal_databases', label: 'Internal Databases', description: 'Company databases, CRM systems, internal records' },
-        { id: 'public_datasets', label: 'Public Datasets', description: 'Publicly available datasets, government data, research datasets' },
-        { id: 'user_generated', label: 'User-Generated Content', description: 'Social media, user uploads, customer feedback' },
-        { id: 'third_party_data', label: 'Third-Party Data', description: 'Purchased datasets, partner data, vendor-provided data' },
-        { id: 'web_scraping', label: 'Web Scraping', description: 'Data collected from websites, APIs, online sources' },
-        { id: 'sensor_data', label: 'Sensor/IoT Data', description: 'Device sensors, IoT devices, monitoring equipment' },
-        { id: 'synthetic_data', label: 'Synthetic Data', description: 'Artificially generated data, simulated datasets' }
-    ];
-
-    const dataTypeOptions = [
-        { id: 'text', label: 'Text Data', description: 'Documents, emails, chat logs, written content' },
-        { id: 'images', label: 'Images', description: 'Photos, screenshots, medical images, visual content' },
-        { id: 'audio', label: 'Audio Data', description: 'Voice recordings, music, sound files' },
-        { id: 'video', label: 'Video Data', description: 'Video files, live streams, surveillance footage' },
-        { id: 'biometric', label: 'Biometric Data', description: 'Fingerprints, facial features, voice patterns, physiological data' },
-        { id: 'behavioral', label: 'Behavioral Data', description: 'User interactions, clickstreams, usage patterns' },
-        { id: 'financial', label: 'Financial Data', description: 'Transaction data, credit information, financial records' },
-        { id: 'location', label: 'Location Data', description: 'GPS coordinates, geolocation, tracking data' },
-        { id: 'health', label: 'Health Data', description: 'Medical records, health metrics, diagnostic data' }
-    ];
-
-    const personalDataOptions = [
-        { value: 'no_personal_data', label: 'No Personal Data', description: 'System does not process any personal data' },
-        { value: 'minimal_personal_data', label: 'Minimal Personal Data', description: 'Limited personal data, basic identifiers only' },
-        { value: 'standard_personal_data', label: 'Standard Personal Data', description: 'Regular personal data processing under GDPR' },
-        { value: 'sensitive_personal_data', label: 'Sensitive Personal Data', description: 'Special categories under GDPR (health, biometric, etc.)' }
-    ];
-
-    const trainingSizeOptions = [
-        { value: 'small', label: 'Small Dataset', description: 'Less than 10,000 data points' },
-        { value: 'medium', label: 'Medium Dataset', description: '10,000 - 100,000 data points' },
-        { value: 'large', label: 'Large Dataset', description: '100,000 - 1 million data points' },
-        { value: 'very_large', label: 'Very Large Dataset', description: 'More than 1 million data points' },
-        { value: 'not_applicable', label: 'Not Applicable', description: 'Rule-based system, no training data' }
-    ];
-
-    const qualityMeasureOptions = [
-        { id: 'accuracy_validation', label: 'Accuracy Validation', description: 'Data accuracy checks and validation processes' },
-        { id: 'completeness_checks', label: 'Completeness Checks', description: 'Ensuring data completeness and addressing missing values' },
-        { id: 'consistency_monitoring', label: 'Consistency Monitoring', description: 'Data consistency across sources and time' },
-        { id: 'bias_detection', label: 'Bias Detection', description: 'Automated bias detection and monitoring' },
-        { id: 'data_lineage', label: 'Data Lineage Tracking', description: 'Tracking data sources and transformations' },
-        { id: 'quality_metrics', label: 'Quality Metrics', description: 'Defined quality metrics and thresholds' }
-    ];
-
-    const biasAssessmentOptions = [
-        { value: 'comprehensive_assessment', label: 'Comprehensive Assessment', description: 'Formal bias assessment with documentation and mitigation plans' },
-        { value: 'basic_assessment', label: 'Basic Assessment', description: 'Basic bias checks and awareness measures' },
-        { value: 'planned_assessment', label: 'Planned Assessment', description: 'Bias assessment is planned but not yet implemented' },
-        { value: 'no_assessment', label: 'No Assessment', description: 'No bias assessment conducted or planned' }
-    ];
-
-    const governanceOptions = [
-        { value: 'formal_governance', label: 'Formal Data Governance', description: 'Established data governance framework with policies and procedures' },
-        { value: 'basic_governance', label: 'Basic Governance', description: 'Basic data management practices and some documentation' },
-        { value: 'minimal_governance', label: 'Minimal Governance', description: 'Limited formal governance, ad-hoc data management' },
-        { value: 'no_governance', label: 'No Formal Governance', description: 'No established data governance framework' }
+    const questions = [
+        {
+            field: 'biometric_categorization' as keyof Step5Data,
+            question: 'Is the AI used for biometric categorization or identification?',
+            description: 'Systems that identify or categorize people based on biometric data (facial recognition, fingerprints, etc.)'
+        },
+        {
+            field: 'critical_infrastructure' as keyof Step5Data,
+            question: 'Is it used in critical infrastructure (e.g., traffic, energy)?',
+            description: 'AI systems managing or controlling critical infrastructure like power grids, transportation, water systems'
+        },
+        {
+            field: 'education_vocational' as keyof Step5Data,
+            question: 'Is it used in education or vocational training?',
+            description: 'Systems for student assessment, admission decisions, educational content delivery, or skills evaluation'
+        },
+        {
+            field: 'employment_hr' as keyof Step5Data,
+            question: 'Is it used in employment or HR-related decisions?',
+            description: 'CV screening, hiring decisions, performance evaluation, promotion decisions, or workforce management'
+        },
+        {
+            field: 'essential_services' as keyof Step5Data,
+            question: 'Is it used to grant access to essential services (e.g., credit, housing)?',
+            description: 'Credit scoring, loan approvals, insurance eligibility, housing applications, social benefits'
+        },
+        {
+            field: 'law_enforcement' as keyof Step5Data,
+            question: 'Is it used in law enforcement (e.g., predictive policing)?',
+            description: 'Crime prediction, evidence analysis, risk assessment, or other law enforcement applications'
+        },
+        {
+            field: 'migration_asylum' as keyof Step5Data,
+            question: 'Is it used in migration, asylum, or border control?',
+            description: 'Visa processing, asylum applications, border security, immigration decisions'
+        },
+        {
+            field: 'justice_democracy' as keyof Step5Data,
+            question: 'Is it used in justice/democracy (e.g., legal scoring)?',
+            description: 'Legal case analysis, judicial decision support, democratic process management'
+        },
+        {
+            field: 'profiling_individuals' as keyof Step5Data,
+            question: 'Does it involve profiling of individuals?',
+            description: 'Evaluating personal characteristics, behavior, interests, or predicting individual outcomes'
+        },
+        {
+            field: 'preparatory_only' as keyof Step5Data,
+            question: 'Are these uses only preparatory, monitoring, or minor deviation detection?',
+            description: 'Limited to narrow procedural tasks, monitoring, or detecting minor deviations (may reduce risk classification)'
+        }
     ];
 
     if (loading) {
@@ -253,416 +244,160 @@ const Step3DataAssessment: React.FC<Step3Props> = ({
     }
 
     return (
-        <div style={{ maxWidth: '800px', margin: '0 auto' }}>
+        <div style={{ maxWidth: '700px', margin: '0 auto' }}>
             {/* Header */}
             <div style={{ marginBottom: '30px' }}>
                 <h2 style={{ fontSize: '24px', fontWeight: '600', color: '#1e252e', marginBottom: '8px' }}>
-                    Data Sources and Processing
+                    Annex III – High-Risk Use Cases
                 </h2>
                 <p style={{ color: '#666', fontSize: '16px' }}>
-                    Provide information about the data your AI system uses, including sources, types, and governance measures.
+                    Determine if your AI system falls under any Annex III high-risk categories that require comprehensive compliance measures.
                 </p>
             </div>
 
-            {/* Data Sources */}
-            <div style={{ marginBottom: '30px' }}>
-                <label style={{
-                    display: 'block',
-                    marginBottom: '16px',
-                    fontWeight: '500',
-                    color: '#333',
-                    fontSize: '16px'
-                }}>
-                    Data Sources * <span style={{ fontSize: '14px', color: '#666', fontWeight: 'normal' }}>(Select all that apply)</span>
-                </label>
-
+            {/* Status Alert */}
+            {highRiskDetected ? (
                 <div style={{
-                    border: errors.data_sources ? '2px solid #dc3545' : '2px solid #e5e7eb',
+                    backgroundColor: '#fed7d7',
+                    border: '1px solid #f56565',
                     borderRadius: '8px',
-                    padding: '16px'
+                    padding: '16px',
+                    marginBottom: '24px',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '12px'
                 }}>
-                    {dataSourceOptions.map((option) => (
-                        <label
-                            key={option.id}
-                            style={{
-                                display: 'flex',
-                                alignItems: 'flex-start',
-                                gap: '12px',
-                                padding: '12px',
-                                marginBottom: '8px',
-                                border: '1px solid #e5e7eb',
-                                borderRadius: '6px',
-                                backgroundColor: 'white',
-                                cursor: 'pointer'
-                            }}
-                        >
-                            <input
-                                type="checkbox"
-                                checked={formData.data_sources.includes(option.id)}
-                                onChange={(e) => handleArrayChange('data_sources', option.id, e.target.checked)}
-                                style={{ marginTop: '2px' }}
-                            />
-                            <div>
-                                <div style={{ fontWeight: '600', color: '#333', marginBottom: '4px' }}>
-                                    {option.label}
-                                </div>
-                                <div style={{ color: '#666', fontSize: '14px' }}>
-                                    {option.description}
-                                </div>
-                            </div>
-                        </label>
-                    ))}
-                </div>
-
-                {errors.data_sources && (
-                    <div style={{ color: '#dc3545', fontSize: '14px', marginTop: '8px' }}>
-                        {errors.data_sources}
+                    <span style={{ fontSize: '20px' }}>⚠️</span>
+                    <div>
+                        <div style={{ fontWeight: '600', color: '#c53030', fontSize: '16px', marginBottom: '4px' }}>
+                            HIGH-RISK AI SYSTEM IDENTIFIED
+                        </div>
+                        <div style={{ color: '#c53030', fontSize: '14px' }}>
+                            Your system requires comprehensive compliance measures under the EU AI Act
+                        </div>
                     </div>
-                )}
-            </div>
-
-            {/* Data Types */}
-            <div style={{ marginBottom: '30px' }}>
-                <label style={{
-                    display: 'block',
-                    marginBottom: '16px',
-                    fontWeight: '500',
-                    color: '#333',
-                    fontSize: '16px'
-                }}>
-                    Data Types * <span style={{ fontSize: '14px', color: '#666', fontWeight: 'normal' }}>(Select all that apply)</span>
-                </label>
-
-                <div style={{
-                    border: errors.data_types ? '2px solid #dc3545' : '2px solid #e5e7eb',
-                    borderRadius: '8px',
-                    padding: '16px'
-                }}>
-                    {dataTypeOptions.map((option) => (
-                        <label
-                            key={option.id}
-                            style={{
-                                display: 'flex',
-                                alignItems: 'flex-start',
-                                gap: '12px',
-                                padding: '12px',
-                                marginBottom: '8px',
-                                border: '1px solid #e5e7eb',
-                                borderRadius: '6px',
-                                backgroundColor: 'white',
-                                cursor: 'pointer'
-                            }}
-                        >
-                            <input
-                                type="checkbox"
-                                checked={formData.data_types.includes(option.id)}
-                                onChange={(e) => handleArrayChange('data_types', option.id, e.target.checked)}
-                                style={{ marginTop: '2px' }}
-                            />
-                            <div>
-                                <div style={{ fontWeight: '600', color: '#333', marginBottom: '4px' }}>
-                                    {option.label}
-                                </div>
-                                <div style={{ color: '#666', fontSize: '14px' }}>
-                                    {option.description}
-                                </div>
-                            </div>
-                        </label>
-                    ))}
                 </div>
-
-                {errors.data_types && (
-                    <div style={{ color: '#dc3545', fontSize: '14px', marginTop: '8px' }}>
-                        {errors.data_types}
+            ) : (
+                <div style={{
+                    backgroundColor: '#f0fff4',
+                    border: '1px solid #68d391',
+                    borderRadius: '8px',
+                    padding: '16px',
+                    marginBottom: '24px',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '12px'
+                }}>
+                    <span style={{ fontSize: '20px' }}>✅</span>
+                    <div>
+                        <div style={{ fontWeight: '600', color: '#22543d', fontSize: '16px', marginBottom: '4px' }}>
+                            No High-Risk Categories Detected
+                        </div>
+                        <div style={{ color: '#22543d', fontSize: '14px' }}>
+                            Your system may qualify for limited or minimal risk classification
+                        </div>
                     </div>
-                )}
-            </div>
-
-            {/* Personal Data Processing */}
-            <div style={{ marginBottom: '30px' }}>
-                <label style={{
-                    display: 'block',
-                    marginBottom: '16px',
-                    fontWeight: '500',
-                    color: '#333',
-                    fontSize: '16px'
-                }}>
-                    Personal Data Processing *
-                </label>
-
-                <div style={{
-                    border: errors.personal_data_processing ? '2px solid #dc3545' : '2px solid #e5e7eb',
-                    borderRadius: '8px',
-                    padding: '16px'
-                }}>
-                    {personalDataOptions.map((option) => (
-                        <label
-                            key={option.value}
-                            style={{
-                                display: 'flex',
-                                alignItems: 'flex-start',
-                                gap: '12px',
-                                padding: '12px',
-                                marginBottom: '8px',
-                                border: `1px solid ${formData.personal_data_processing === option.value ? '#6030c9' : '#e5e7eb'}`,
-                                borderRadius: '6px',
-                                backgroundColor: formData.personal_data_processing === option.value ? '#f8f7ff' : 'white',
-                                cursor: 'pointer'
-                            }}
-                        >
-                            <input
-                                type="radio"
-                                name="personal_data_processing"
-                                value={option.value}
-                                checked={formData.personal_data_processing === option.value}
-                                onChange={(e) => handleInputChange('personal_data_processing', e.target.value)}
-                                style={{ marginTop: '2px' }}
-                            />
-                            <div>
-                                <div style={{ fontWeight: '600', color: '#333', marginBottom: '4px' }}>
-                                    {option.label}
-                                </div>
-                                <div style={{ color: '#666', fontSize: '14px' }}>
-                                    {option.description}
-                                </div>
-                            </div>
-                        </label>
-                    ))}
                 </div>
+            )}
 
-                {errors.personal_data_processing && (
-                    <div style={{ color: '#dc3545', fontSize: '14px', marginTop: '8px' }}>
-                        {errors.personal_data_processing}
+            {/* Questions */}
+            <div style={{
+                backgroundColor: '#f7fafc',
+                border: '1px solid #e2e8f0',
+                borderRadius: '8px',
+                padding: '24px'
+            }}>
+                {questions.map((item, index) => (
+                    <div key={item.field} style={{
+                        marginBottom: index === questions.length - 1 ? '0' : '24px',
+                        backgroundColor: 'white',
+                        border: '1px solid #e2e8f0',
+                        borderRadius: '8px',
+                        padding: '20px'
+                    }}>
+                        <div style={{ marginBottom: '12px' }}>
+                            <h3 style={{
+                                fontSize: '16px',
+                                fontWeight: '600',
+                                color: '#2d3748',
+                                marginBottom: '8px',
+                                margin: 0
+                            }}>
+                                {item.question} *
+                            </h3>
+                            <p style={{
+                                color: '#718096',
+                                fontSize: '14px',
+                                lineHeight: '1.4',
+                                margin: 0
+                            }}>
+                                {item.description}
+                            </p>
+                        </div>
+
+                        <div style={{
+                            display: 'flex',
+                            gap: '16px',
+                            border: errors[item.field] ? '1px solid #f56565' : 'none',
+                            borderRadius: '6px',
+                            padding: errors[item.field] ? '8px' : '0'
+                        }}>
+                            <label style={{
+                                display: 'flex',
+                                alignItems: 'center',
+                                gap: '8px',
+                                padding: '8px 16px',
+                                backgroundColor: formData[item.field] === 'yes' ? '#fed7d7' : '#f7fafc',
+                                border: `1px solid ${formData[item.field] === 'yes' ? '#f56565' : '#e2e8f0'}`,
+                                borderRadius: '6px',
+                                cursor: 'pointer',
+                                fontSize: '14px',
+                                fontWeight: '500'
+                            }}>
+                                <input
+                                    type="radio"
+                                    name={item.field}
+                                    value="yes"
+                                    checked={formData[item.field] === 'yes'}
+                                    onChange={(e) => handleInputChange(item.field, e.target.value)}
+                                />
+                                <span style={{ color: formData[item.field] === 'yes' ? '#c53030' : '#2d3748' }}>
+                                    Yes
+                                </span>
+                            </label>
+
+                            <label style={{
+                                display: 'flex',
+                                alignItems: 'center',
+                                gap: '8px',
+                                padding: '8px 16px',
+                                backgroundColor: formData[item.field] === 'no' ? '#f0fff4' : '#f7fafc',
+                                border: `1px solid ${formData[item.field] === 'no' ? '#68d391' : '#e2e8f0'}`,
+                                borderRadius: '6px',
+                                cursor: 'pointer',
+                                fontSize: '14px',
+                                fontWeight: '500'
+                            }}>
+                                <input
+                                    type="radio"
+                                    name={item.field}
+                                    value="no"
+                                    checked={formData[item.field] === 'no'}
+                                    onChange={(e) => handleInputChange(item.field, e.target.value)}
+                                />
+                                <span style={{ color: formData[item.field] === 'no' ? '#22543d' : '#2d3748' }}>
+                                    No
+                                </span>
+                            </label>
+                        </div>
+
+                        {errors[item.field] && (
+                            <div style={{ color: '#e53e3e', fontSize: '12px', marginTop: '8px' }}>
+                                {errors[item.field]}
+                            </div>
+                        )}
                     </div>
-                )}
-            </div>
-
-            {/* Training Data Size */}
-            <div style={{ marginBottom: '30px' }}>
-                <label style={{
-                    display: 'block',
-                    marginBottom: '16px',
-                    fontWeight: '500',
-                    color: '#333',
-                    fontSize: '16px'
-                }}>
-                    Training Data Size *
-                </label>
-
-                <div style={{
-                    border: errors.training_data_size ? '2px solid #dc3545' : '2px solid #e5e7eb',
-                    borderRadius: '8px',
-                    padding: '16px'
-                }}>
-                    {trainingSizeOptions.map((option) => (
-                        <label
-                            key={option.value}
-                            style={{
-                                display: 'flex',
-                                alignItems: 'flex-start',
-                                gap: '12px',
-                                padding: '12px',
-                                marginBottom: '8px',
-                                border: `1px solid ${formData.training_data_size === option.value ? '#6030c9' : '#e5e7eb'}`,
-                                borderRadius: '6px',
-                                backgroundColor: formData.training_data_size === option.value ? '#f8f7ff' : 'white',
-                                cursor: 'pointer'
-                            }}
-                        >
-                            <input
-                                type="radio"
-                                name="training_data_size"
-                                value={option.value}
-                                checked={formData.training_data_size === option.value}
-                                onChange={(e) => handleInputChange('training_data_size', e.target.value)}
-                                style={{ marginTop: '2px' }}
-                            />
-                            <div>
-                                <div style={{ fontWeight: '600', color: '#333', marginBottom: '4px' }}>
-                                    {option.label}
-                                </div>
-                                <div style={{ color: '#666', fontSize: '14px' }}>
-                                    {option.description}
-                                </div>
-                            </div>
-                        </label>
-                    ))}
-                </div>
-
-                {errors.training_data_size && (
-                    <div style={{ color: '#dc3545', fontSize: '14px', marginTop: '8px' }}>
-                        {errors.training_data_size}
-                    </div>
-                )}
-            </div>
-
-            {/* Data Quality Measures */}
-            <div style={{ marginBottom: '30px' }}>
-                <label style={{
-                    display: 'block',
-                    marginBottom: '16px',
-                    fontWeight: '500',
-                    color: '#333',
-                    fontSize: '16px'
-                }}>
-                    Data Quality Measures <span style={{ fontSize: '14px', color: '#666', fontWeight: 'normal' }}>(Select all that apply, optional)</span>
-                </label>
-
-                <div style={{
-                    border: '2px solid #e5e7eb',
-                    borderRadius: '8px',
-                    padding: '16px'
-                }}>
-                    {qualityMeasureOptions.map((option) => (
-                        <label
-                            key={option.id}
-                            style={{
-                                display: 'flex',
-                                alignItems: 'flex-start',
-                                gap: '12px',
-                                padding: '12px',
-                                marginBottom: '8px',
-                                border: '1px solid #e5e7eb',
-                                borderRadius: '6px',
-                                backgroundColor: 'white',
-                                cursor: 'pointer'
-                            }}
-                        >
-                            <input
-                                type="checkbox"
-                                checked={formData.data_quality_measures.includes(option.id)}
-                                onChange={(e) => handleArrayChange('data_quality_measures', option.id, e.target.checked)}
-                                style={{ marginTop: '2px' }}
-                            />
-                            <div>
-                                <div style={{ fontWeight: '600', color: '#333', marginBottom: '4px' }}>
-                                    {option.label}
-                                </div>
-                                <div style={{ color: '#666', fontSize: '14px' }}>
-                                    {option.description}
-                                </div>
-                            </div>
-                        </label>
-                    ))}
-                </div>
-            </div>
-
-            {/* Bias Assessment */}
-            <div style={{ marginBottom: '30px' }}>
-                <label style={{
-                    display: 'block',
-                    marginBottom: '16px',
-                    fontWeight: '500',
-                    color: '#333',
-                    fontSize: '16px'
-                }}>
-                    Bias Assessment *
-                </label>
-
-                <div style={{
-                    border: errors.bias_assessment ? '2px solid #dc3545' : '2px solid #e5e7eb',
-                    borderRadius: '8px',
-                    padding: '16px'
-                }}>
-                    {biasAssessmentOptions.map((option) => (
-                        <label
-                            key={option.value}
-                            style={{
-                                display: 'flex',
-                                alignItems: 'flex-start',
-                                gap: '12px',
-                                padding: '12px',
-                                marginBottom: '8px',
-                                border: `1px solid ${formData.bias_assessment === option.value ? '#6030c9' : '#e5e7eb'}`,
-                                borderRadius: '6px',
-                                backgroundColor: formData.bias_assessment === option.value ? '#f8f7ff' : 'white',
-                                cursor: 'pointer'
-                            }}
-                        >
-                            <input
-                                type="radio"
-                                name="bias_assessment"
-                                value={option.value}
-                                checked={formData.bias_assessment === option.value}
-                                onChange={(e) => handleInputChange('bias_assessment', e.target.value)}
-                                style={{ marginTop: '2px' }}
-                            />
-                            <div>
-                                <div style={{ fontWeight: '600', color: '#333', marginBottom: '4px' }}>
-                                    {option.label}
-                                </div>
-                                <div style={{ color: '#666', fontSize: '14px' }}>
-                                    {option.description}
-                                </div>
-                            </div>
-                        </label>
-                    ))}
-                </div>
-
-                {errors.bias_assessment && (
-                    <div style={{ color: '#dc3545', fontSize: '14px', marginTop: '8px' }}>
-                        {errors.bias_assessment}
-                    </div>
-                )}
-            </div>
-
-            {/* Data Governance */}
-            <div style={{ marginBottom: '30px' }}>
-                <label style={{
-                    display: 'block',
-                    marginBottom: '16px',
-                    fontWeight: '500',
-                    color: '#333',
-                    fontSize: '16px'
-                }}>
-                    Data Governance Framework *
-                </label>
-
-                <div style={{
-                    border: errors.data_governance ? '2px solid #dc3545' : '2px solid #e5e7eb',
-                    borderRadius: '8px',
-                    padding: '16px'
-                }}>
-                    {governanceOptions.map((option) => (
-                        <label
-                            key={option.value}
-                            style={{
-                                display: 'flex',
-                                alignItems: 'flex-start',
-                                gap: '12px',
-                                padding: '12px',
-                                marginBottom: '8px',
-                                border: `1px solid ${formData.data_governance === option.value ? '#6030c9' : '#e5e7eb'}`,
-                                borderRadius: '6px',
-                                backgroundColor: formData.data_governance === option.value ? '#f8f7ff' : 'white',
-                                cursor: 'pointer'
-                            }}
-                        >
-                            <input
-                                type="radio"
-                                name="data_governance"
-                                value={option.value}
-                                checked={formData.data_governance === option.value}
-                                onChange={(e) => handleInputChange('data_governance', e.target.value)}
-                                style={{ marginTop: '2px' }}
-                            />
-                            <div>
-                                <div style={{ fontWeight: '600', color: '#333', marginBottom: '4px' }}>
-                                    {option.label}
-                                </div>
-                                <div style={{ color: '#666', fontSize: '14px' }}>
-                                    {option.description}
-                                </div>
-                            </div>
-                        </label>
-                    ))}
-                </div>
-
-                {errors.data_governance && (
-                    <div style={{ color: '#dc3545', fontSize: '14px', marginTop: '8px' }}>
-                        {errors.data_governance}
-                    </div>
-                )}
+                ))}
             </div>
 
             {/* Submit Error */}
@@ -673,7 +408,8 @@ const Step3DataAssessment: React.FC<Step3Props> = ({
                     borderRadius: '8px',
                     padding: '12px',
                     color: '#721c24',
-                    marginBottom: '24px'
+                    marginTop: '16px',
+                    fontSize: '14px'
                 }}>
                     {errors.submit}
                 </div>
@@ -753,4 +489,4 @@ const Step3DataAssessment: React.FC<Step3Props> = ({
     );
 };
 
-export default Step3DataAssessment;
+export default Step5AnnexIIIAssessment;

@@ -1,4 +1,3 @@
-// src/pages/eu_act/WizardSteps/Step1BasicInfo.tsx
 import React, { useEffect, useState } from 'react';
 import { aiSystemsApi } from '../../../services/api';
 
@@ -6,6 +5,8 @@ interface Step1Data {
     system_name: string;
     system_description: string;
     development_stage: string;
+    system_version: string;
+    planned_deployment_timeline: string;
 }
 
 interface Step1Props {
@@ -26,7 +27,9 @@ const Step1BasicInfo: React.FC<Step1Props> = ({
     const [formData, setFormData] = useState<Step1Data>({
         system_name: initialData?.system_name || '',
         system_description: initialData?.system_description || '',
-        development_stage: initialData?.development_stage || 'planning'
+        development_stage: initialData?.development_stage || 'planning',
+        system_version: initialData?.system_version || '',
+        planned_deployment_timeline: initialData?.planned_deployment_timeline || ''
     });
 
     const [saving, setSaving] = useState(false);
@@ -38,7 +41,9 @@ const Step1BasicInfo: React.FC<Step1Props> = ({
             setFormData({
                 system_name: initialData.system_name || '',
                 system_description: initialData.system_description || '',
-                development_stage: initialData.development_stage || 'planning'
+                development_stage: initialData.development_stage || 'planning',
+                system_version: initialData.system_version || '',
+                planned_deployment_timeline: initialData.planned_deployment_timeline || ''
             });
         }
     }, [initialData]);
@@ -73,6 +78,14 @@ const Step1BasicInfo: React.FC<Step1Props> = ({
             newErrors.system_description = 'Description must be at least 10 characters';
         }
 
+        if (!formData.development_stage) {
+            newErrors.development_stage = 'Development stage is required';
+        }
+
+        if (!formData.planned_deployment_timeline) {
+            newErrors.planned_deployment_timeline = 'Deployment timeline is required';
+        }
+
         setErrors(newErrors);
         return Object.keys(newErrors).length === 0;
     };
@@ -86,7 +99,7 @@ const Step1BasicInfo: React.FC<Step1Props> = ({
             setSaving(true);
 
             // Save step data to backend
-            await aiSystemsApi.updateAssessmentStep(systemId, {
+            await aiSystemsApi.updateAssessmentStep(String(systemId).trim(), {
                 step: 1,
                 data: formData
             });
@@ -161,7 +174,7 @@ const Step1BasicInfo: React.FC<Step1Props> = ({
                     color: '#333',
                     fontSize: '16px'
                 }}>
-                    System Name *
+                    What is the system name? *
                 </label>
                 <input
                     type="text"
@@ -196,7 +209,7 @@ const Step1BasicInfo: React.FC<Step1Props> = ({
                     color: '#333',
                     fontSize: '16px'
                 }}>
-                    System Description *
+                    Describe the AI system *
                 </label>
                 <textarea
                     value={formData.system_description}
@@ -233,7 +246,7 @@ const Step1BasicInfo: React.FC<Step1Props> = ({
                     color: '#333',
                     fontSize: '16px'
                 }}>
-                    Development Stage *
+                    What is the current development stage? *
                 </label>
                 <select
                     value={formData.development_stage}
@@ -241,7 +254,7 @@ const Step1BasicInfo: React.FC<Step1Props> = ({
                     style={{
                         width: '100%',
                         padding: '12px',
-                        border: '2px solid #ddd',
+                        border: `2px solid ${errors.development_stage ? '#dc3545' : '#ddd'}`,
                         borderRadius: '8px',
                         fontSize: '16px',
                         backgroundColor: 'white',
@@ -249,15 +262,99 @@ const Step1BasicInfo: React.FC<Step1Props> = ({
                         boxSizing: 'border-box'
                     }}
                     onFocus={(e) => e.target.style.borderColor = '#6030c9'}
-                    onBlur={(e) => e.target.style.borderColor = '#ddd'}
+                    onBlur={(e) => e.target.style.borderColor = errors.development_stage ? '#dc3545' : '#ddd'}
                 >
-                    <option value="planning">Planning/Design</option>
-                    <option value="development">In Development</option>
-                    <option value="testing">Testing/Pilot</option>
-                    <option value="deployed">Deployed/Production</option>
+                    <option value="">Select development stage...</option>
+                    <option value="planning">Planning</option>
+                    <option value="development">Development</option>
+                    <option value="testing">Testing</option>
+                    <option value="deployed">Deployed</option>
                 </select>
+                {errors.development_stage && (
+                    <div style={{ color: '#dc3545', fontSize: '14px', marginTop: '4px' }}>
+                        {errors.development_stage}
+                    </div>
+                )}
                 <div style={{ color: '#666', fontSize: '12px', marginTop: '4px' }}>
                     This affects compliance timelines and requirements
+                </div>
+            </div>
+
+            {/* System Version */}
+            <div style={{ marginBottom: '24px' }}>
+                <label style={{
+                    display: 'block',
+                    marginBottom: '8px',
+                    fontWeight: '500',
+                    color: '#333',
+                    fontSize: '16px'
+                }}>
+                    What is the system version?
+                </label>
+                <input
+                    type="text"
+                    value={formData.system_version}
+                    onChange={(e) => handleInputChange('system_version', e.target.value)}
+                    placeholder="e.g., v2.1.0, Beta 1.0, Production Release"
+                    style={{
+                        width: '100%',
+                        padding: '12px',
+                        border: '2px solid #ddd',
+                        borderRadius: '8px',
+                        fontSize: '16px',
+                        transition: 'border-color 0.3s ease',
+                        boxSizing: 'border-box'
+                    }}
+                    onFocus={(e) => e.target.style.borderColor = '#6030c9'}
+                    onBlur={(e) => e.target.style.borderColor = '#ddd'}
+                />
+                <div style={{ color: '#666', fontSize: '12px', marginTop: '4px' }}>
+                    Optional: Current version or release identifier
+                </div>
+            </div>
+
+            {/* Planned Deployment Timeline */}
+            <div style={{ marginBottom: '24px' }}>
+                <label style={{
+                    display: 'block',
+                    marginBottom: '8px',
+                    fontWeight: '500',
+                    color: '#333',
+                    fontSize: '16px'
+                }}>
+                    What is the planned deployment timeline? *
+                </label>
+                <select
+                    value={formData.planned_deployment_timeline}
+                    onChange={(e) => handleInputChange('planned_deployment_timeline', e.target.value)}
+                    style={{
+                        width: '100%',
+                        padding: '12px',
+                        border: `2px solid ${errors.planned_deployment_timeline ? '#dc3545' : '#ddd'}`,
+                        borderRadius: '8px',
+                        fontSize: '16px',
+                        backgroundColor: 'white',
+                        cursor: 'pointer',
+                        boxSizing: 'border-box'
+                    }}
+                    onFocus={(e) => e.target.style.borderColor = '#6030c9'}
+                    onBlur={(e) => e.target.style.borderColor = errors.planned_deployment_timeline ? '#dc3545' : '#ddd'}
+                >
+                    <option value="">Select deployment timeline...</option>
+                    <option value="already_deployed">Already deployed</option>
+                    <option value="within_3_months">Within 3 months</option>
+                    <option value="3_6_months">3–6 months</option>
+                    <option value="6_12_months">6–12 months</option>
+                    <option value="12_plus_months">12+ months</option>
+                    <option value="not_planned_yet">Not planned yet</option>
+                </select>
+                {errors.planned_deployment_timeline && (
+                    <div style={{ color: '#dc3545', fontSize: '14px', marginTop: '4px' }}>
+                        {errors.planned_deployment_timeline}
+                    </div>
+                )}
+                <div style={{ color: '#666', fontSize: '12px', marginTop: '4px' }}>
+                    This helps determine compliance deadlines and requirements
                 </div>
             </div>
 

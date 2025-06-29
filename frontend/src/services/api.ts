@@ -1,21 +1,21 @@
 // src/services/api.ts
-import axios from 'axios'; // ← Add AxiosError import
+import axios from 'axios';
 import { ApiResponse, ExtractionField, Invoice, InvoiceListParams } from '../types/invoice';
 
 // QA Types - UPDATED with session support
 export interface QuestionRequest {
   question: string;
   document_ids?: string[];
-  session_id?: string;  // NEW: Add session ID support
+  session_id?: string;
 }
 
 export interface QuestionResponse {
   answer: string;
   sources: Record<string, any>;
-  session_id?: string;  // NEW: Include session ID in response
+  session_id?: string;
 }
 
-// Chat Session Types - NEW
+// Chat Session Types
 export interface ChatSession {
   id: string;
   user_id: string;
@@ -26,7 +26,6 @@ export interface ChatSession {
   created_at: string;
   updated_at: string;
   is_active: boolean;
-  // From backend joins:
   history_message_count?: number;
   chat_message_count?: number;
   total_message_count?: number;
@@ -70,286 +69,6 @@ export interface ChatSessionWithMessages {
   };
   message?: string;
 }
-
-const api = axios.create({
-  baseURL: process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000',
-  headers: {
-    'Content-Type': 'application/json',
-  },
-});
-
-api.interceptors.response.use(
-  (response) => response,
-  (error) => {
-    console.error('API Error:', error.response);
-    return Promise.reject(error);
-  }
-);
-
-// Add auth interceptor for JWT token
-api.interceptors.request.use((config) => {
-  // Get token from localStorage or session
-  const token = typeof window !== 'undefined' ? localStorage.getItem('auth_token') : null;
-
-  if (token && config.headers) {
-    config.headers.Authorization = `Bearer ${token}`;
-  }
-
-  return config;
-});
-
-// Invoice API functions
-export const invoiceApi = {
-    // Get all invoices with optional filtering
-    getInvoices: async (params: InvoiceListParams = {}): Promise<ApiResponse<{ invoices: Invoice[]; total: number }>> => {
-      try {
-        console.log('Fetching invoices from:', 'http://localhost:8000/invoices'); // Debug log
-        const response = await axios.get('http://localhost:8000/invoices', { params });
-        return response.data;
-      } catch (error) {
-        console.error('Error fetching invoices:', error);
-        // Return empty state instead of throwing
-        return {
-          success: false,
-          data: { invoices: [], total: 0 },
-          message: 'Failed to load documents'
-        };
-      }
-    },
-
-  // Get single invoice by ID
-  getInvoice: async (id: string): Promise<ApiResponse<Invoice>> => {
-    try {
-      const response = await api.get(`/invoices/${id}`);
-      return response.data;
-    } catch (error) {
-      console.error(`Error fetching invoice ${id}:`, error);
-      throw error;
-    }
-  },
-
-  // Upload new invoice
-  uploadInvoice: async (file: File): Promise<ApiResponse<Invoice>> => {
-    try {
-      const formData = new FormData();
-      formData.append('file', file);
-
-      const response = await axios.post('http://localhost:8000/invoices', formData, {
-        headers: {
-          'Content-Type': 'multipart/form-data'
-        }
-      });
-
-      return response.data;
-    } catch (error) {
-      console.error('Error uploading invoice:', error);
-      throw error;
-    }
-  },
-
-  // Extract data from invoice
-  extractData: async (
-    invoiceId: string,
-    _fields: Array<{ id: string; name: string }>
-  ): Promise<{ success: boolean; data: ExtractionField[] }> => {
-    try {
-      const response = await api.post(`/invoices/${invoiceId}/extract-ai`, {
-        fields: _fields,
-      });
-      return response.data;
-    } catch (error) {
-      console.error(`Error extracting with AI for invoice ${invoiceId}:`, error);
-      throw error;
-    }
-  },
-
-  // Export data as JSON
-  exportJson: async (invoiceId: string, fields: ExtractionField[]): Promise<boolean> => {
-    try {
-      const response = await api.post(`/invoices/${invoiceId}/export/json`, { fields }, {
-        responseType: 'blob'
-      });
-
-      // Create download link
-      const url = window.URL.createObjectURL(new Blob([response.data]));
-      const link = document.createElement('a');
-      link.href = url;
-      link.setAttribute('download', `invoice-${invoiceId}-data.json`);
-      document.body.appendChild(link);
-      link.click();
-      link.remove();
-
-      return true;
-    } catch (error) {
-      console.error(`Error exporting JSON for invoice ${invoiceId}:`, error);
-      throw error;
-    }
-  },
-
-  // Export data as XML
-  exportXml: async (invoiceId: string, fields: ExtractionField[]): Promise<boolean> => {
-    try {
-      const response = await api.post(`/invoices/${invoiceId}/export/xml`, { fields }, {
-        responseType: 'blob'
-      });
-
-      // Create download link
-      const url = window.URL.createObjectURL(new Blob([response.data]));
-      const link = document.createElement('a');
-      link.href = url;
-      link.setAttribute('download', `invoice-${invoiceId}-data.xml`);
-      document.body.appendChild(link);
-      link.click();
-      link.remove();
-
-      return true;
-    } catch (error) {
-      console.error(`Error exporting XML for invoice ${invoiceId}:`, error);
-      throw error;
-    }
-  },
-
-  exportData: async (
-    invoiceId: string,
-    fields: ExtractionField[],
-    format: 'json' | 'xml'
-  ): Promise<boolean> => {
-    if (format === 'json') {
-      return invoiceApi.exportJson(invoiceId, fields);
-    } else {
-      return invoiceApi.exportXml(invoiceId, fields);
-    }
-  }
-};
-
-// QA API - UPDATED with session support
-export const qaApi = {
-  // Ask a question about documents - UPDATED to include session_id
-  askQuestion: async (question: string, documentIds?: string[], sessionId?: string): Promise<QuestionResponse> => {
-    try {
-      const requestData: QuestionRequest = {
-        question,
-        document_ids: documentIds,
-        session_id: sessionId  // NEW: Include session ID
-      };
-
-      // Note the different endpoint path - this goes directly to /qa rather than /api/qa
-      const response = await axios.post<QuestionResponse>(
-        `${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'}/qa`,
-        requestData,
-        {
-          headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${typeof window !== 'undefined' ? localStorage.getItem('auth_token') : null}`
-          }
-        }
-      );
-
-      return response.data;
-    } catch (error) {
-      console.error('Error asking question:', error);
-      throw error;
-    }
-  }
-};
-
-// Chat Sessions API - NEW
-export const chatSessionsApi = {
-  // Create a new chat session
-  createSession: async (sessionData: ChatSessionCreate): Promise<ChatSessionResponse> => {
-    try {
-      const response = await axios.post<ChatSessionResponse>(
-        `${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'}/chat-sessions`,
-        sessionData,
-        {
-          headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${typeof window !== 'undefined' ? localStorage.getItem('auth_token') : null}`
-          }
-        }
-      );
-      return response.data;
-    } catch (error) {
-      console.error('Error creating chat session:', error);
-      throw error;
-    }
-  },
-
-  // Get all chat sessions
-  getSessions: async (limit: number = 50, offset: number = 0): Promise<ChatSessionsListResponse> => {
-    try {
-      const response = await axios.get<ChatSessionsListResponse>(
-        `${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'}/chat-sessions`,
-        {
-          params: { limit, offset },
-          headers: {
-            'Authorization': `Bearer ${typeof window !== 'undefined' ? localStorage.getItem('auth_token') : null}`
-          }
-        }
-      );
-      return response.data;
-    } catch (error) {
-      console.error('Error fetching chat sessions:', error);
-      throw error;
-    }
-  },
-
-  // Get a specific session with messages
-  getSession: async (sessionId: string): Promise<ChatSessionWithMessages> => {
-    try {
-      const response = await axios.get<ChatSessionWithMessages>(
-        `${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'}/chat-sessions/${sessionId}`,
-        {
-          headers: {
-            'Authorization': `Bearer ${typeof window !== 'undefined' ? localStorage.getItem('auth_token') : null}`
-          }
-        }
-      );
-      return response.data;
-    } catch (error) {
-      console.error('Error fetching chat session:', error);
-      throw error;
-    }
-  },
-
-  // Update a chat session
-  updateSession: async (sessionId: string, updates: ChatSessionUpdate): Promise<ChatSessionResponse> => {
-    try {
-      const response = await axios.put<ChatSessionResponse>(
-        `${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'}/chat-sessions/${sessionId}`,
-        updates,
-        {
-          headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${typeof window !== 'undefined' ? localStorage.getItem('auth_token') : null}`
-          }
-        }
-      );
-      return response.data;
-    } catch (error) {
-      console.error('Error updating chat session:', error);
-      throw error;
-    }
-  },
-
-  // Delete a chat session
-  deleteSession: async (sessionId: string): Promise<{ status: string; message: string }> => {
-    try {
-      const response = await axios.delete<{ status: string; message: string }>(
-        `${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'}/chat-sessions/${sessionId}`,
-        {
-          headers: {
-            'Authorization': `Bearer ${typeof window !== 'undefined' ? localStorage.getItem('auth_token') : null}`
-          }
-        }
-      );
-      return response.data;
-    } catch (error) {
-      console.error('Error deleting chat session:', error);
-      throw error;
-    }
-  }
-};
 
 // Prompt Optimizer Types
 export interface Prompt {
@@ -443,9 +162,406 @@ export interface ApiPromptResponse<T = any> {
   offset?: number;
 }
 
+// AI Risk Assessment Types - UPDATED for Steps 1-10
+export interface AISystem {
+  id: string;
+  user_id: string;
+  name: string;
+  description?: string;
+  development_stage?: string;
+  status: string;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface Assessment {
+  id: string;
+  ai_system_id: string;
+  current_step: number;
+  completed_steps: number;
+
+  // Step completion flags
+  step_1_completed: boolean;
+  step_2_completed: boolean;
+  step_3_completed: boolean;
+  step_4_completed: boolean;
+  step_5_completed: boolean;
+  step_6_completed: boolean;
+  step_7_completed: boolean;
+  step_8_completed: boolean;
+  step_9_completed: boolean;
+  step_10_completed: boolean;
+
+  // Step 1: Basic Information
+  system_name?: string;
+  system_description?: string;
+  development_stage?: string;
+  system_version?: string;
+  planned_deployment_timeline?: string;
+
+  // Step 2: Purpose Analysis
+  business_domain?: string;
+  primary_purpose?: string;
+  target_users?: any;
+  use_case_description?: string;
+  geographic_scope?: any;
+  automated_decisions_legal_effects?: string;
+
+  // Step 3: Technical Characteristics
+  ai_model_type?: string;
+  model_architecture?: string;
+  data_processing_type?: string;
+  input_data_types?: any;
+  output_types?: any;
+  decision_autonomy?: string;
+
+  // Step 4: Prohibited Practices
+  subliminal_manipulation?: string;
+  vulnerable_groups_exploitation?: string;
+  social_scoring_public?: string;
+  realtime_biometric_public?: string;
+
+  // Step 5: Annex III Assessment
+  biometric_categorization?: boolean;
+  critical_infrastructure?: boolean;
+  education_training?: boolean;
+  employment_recruitment?: boolean;
+  essential_services?: boolean;
+  law_enforcement?: boolean;
+  migration_asylum?: boolean;
+  justice_democracy?: boolean;
+  involves_profiling?: boolean;
+  preparatory_task_only?: boolean;
+
+  // Step 6: Safety Components
+  safety_component?: string;
+  safety_component_sector?: string;
+  third_party_conformity?: boolean;
+  ce_marking_required?: boolean;
+  eu_legislation_applicable?: any;
+
+  // Step 7: Impact and Oversight
+  affected_individuals_count?: string;
+  vulnerable_groups_affected?: boolean;
+  vulnerable_groups_details?: string;
+  impact_level?: string;
+  impact_details?: string;
+  human_oversight_level?: string;
+  oversight_mechanisms?: string;
+  override_capabilities?: boolean;
+  human_review_process?: string;
+
+  // Step 8: Data Governance
+  data_sources?: any;
+  personal_data_processing?: boolean;
+  data_quality_measures?: string;
+  bias_mitigation_measures?: string;
+  data_governance_framework?: string;
+  gdpr_compliance_status?: string;
+
+  // Step 9: Transparency
+  transparency_level?: string;
+  user_notification_mechanism?: string;
+  explainability_features?: string;
+  decision_explanation_capability?: boolean;
+
+  // Step 10: Compliance Readiness
+  existing_governance_framework?: boolean;
+  governance_details?: string;
+  documentation_status?: string;
+  risk_management_system?: boolean;
+  conformity_assessment_ready?: boolean;
+}
+
+export interface ClassificationResult {
+  id: string;
+  ai_system_id: string;
+  risk_level: string;
+  primary_reason: string;
+  confidence_level: string;
+  article_5_violation: boolean;
+  annex_iii_match: boolean;
+  has_exceptions: boolean;
+  created_at: string;
+}
+
+export interface AISystemCreateRequest {
+  name: string;
+  description?: string;
+  development_stage?: string;
+}
+
+export interface AssessmentStepUpdate {
+  step: number;
+  data: Record<string, any>;
+}
+
+// Create axios instance
+const api = axios.create({
+  baseURL: process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000',
+  headers: {
+    'Content-Type': 'application/json',
+  },
+});
+
+// Response interceptor
+api.interceptors.response.use(
+  (response) => response,
+  (error) => {
+    console.error('API Error:', error.response);
+    return Promise.reject(error);
+  }
+);
+
+// Auth interceptor
+api.interceptors.request.use((config) => {
+  const token = typeof window !== 'undefined' ? localStorage.getItem('auth_token') : null;
+
+  if (token && config.headers) {
+    config.headers.Authorization = `Bearer ${token}`;
+  }
+
+  return config;
+});
+
+// Invoice API functions
+export const invoiceApi = {
+  getInvoices: async (params: InvoiceListParams = {}): Promise<ApiResponse<{ invoices: Invoice[]; total: number }>> => {
+    try {
+      const response = await axios.get('http://localhost:8000/invoices', { params });
+      return response.data;
+    } catch (error) {
+      console.error('Error fetching invoices:', error);
+      return {
+        success: false,
+        data: { invoices: [], total: 0 },
+        message: 'Failed to load documents'
+      };
+    }
+  },
+
+  getInvoice: async (id: string): Promise<ApiResponse<Invoice>> => {
+    try {
+      const response = await api.get(`/invoices/${id}`);
+      return response.data;
+    } catch (error) {
+      console.error(`Error fetching invoice ${id}:`, error);
+      throw error;
+    }
+  },
+
+  uploadInvoice: async (file: File): Promise<ApiResponse<Invoice>> => {
+    try {
+      const formData = new FormData();
+      formData.append('file', file);
+
+      const response = await axios.post('http://localhost:8000/invoices', formData, {
+        headers: {
+          'Content-Type': 'multipart/form-data'
+        }
+      });
+
+      return response.data;
+    } catch (error) {
+      console.error('Error uploading invoice:', error);
+      throw error;
+    }
+  },
+
+  extractData: async (
+    invoiceId: string,
+    _fields: Array<{ id: string; name: string }>
+  ): Promise<{ success: boolean; data: ExtractionField[] }> => {
+    try {
+      const response = await api.post(`/invoices/${invoiceId}/extract-ai`, {
+        fields: _fields,
+      });
+      return response.data;
+    } catch (error) {
+      console.error(`Error extracting with AI for invoice ${invoiceId}:`, error);
+      throw error;
+    }
+  },
+
+  exportJson: async (invoiceId: string, fields: ExtractionField[]): Promise<boolean> => {
+    try {
+      const response = await api.post(`/invoices/${invoiceId}/export/json`, { fields }, {
+        responseType: 'blob'
+      });
+
+      const url = window.URL.createObjectURL(new Blob([response.data]));
+      const link = document.createElement('a');
+      link.href = url;
+      link.setAttribute('download', `invoice-${invoiceId}-data.json`);
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+
+      return true;
+    } catch (error) {
+      console.error(`Error exporting JSON for invoice ${invoiceId}:`, error);
+      throw error;
+    }
+  },
+
+  exportXml: async (invoiceId: string, fields: ExtractionField[]): Promise<boolean> => {
+    try {
+      const response = await api.post(`/invoices/${invoiceId}/export/xml`, { fields }, {
+        responseType: 'blob'
+      });
+
+      const url = window.URL.createObjectURL(new Blob([response.data]));
+      const link = document.createElement('a');
+      link.href = url;
+      link.setAttribute('download', `invoice-${invoiceId}-data.xml`);
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+
+      return true;
+    } catch (error) {
+      console.error(`Error exporting XML for invoice ${invoiceId}:`, error);
+      throw error;
+    }
+  },
+
+  exportData: async (
+    invoiceId: string,
+    fields: ExtractionField[],
+    format: 'json' | 'xml'
+  ): Promise<boolean> => {
+    if (format === 'json') {
+      return invoiceApi.exportJson(invoiceId, fields);
+    } else {
+      return invoiceApi.exportXml(invoiceId, fields);
+    }
+  }
+};
+
+// QA API
+export const qaApi = {
+  askQuestion: async (question: string, documentIds?: string[], sessionId?: string): Promise<QuestionResponse> => {
+    try {
+      const requestData: QuestionRequest = {
+        question,
+        document_ids: documentIds,
+        session_id: sessionId
+      };
+
+      const response = await axios.post<QuestionResponse>(
+        `${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'}/qa`,
+        requestData,
+        {
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${typeof window !== 'undefined' ? localStorage.getItem('auth_token') : null}`
+          }
+        }
+      );
+
+      return response.data;
+    } catch (error) {
+      console.error('Error asking question:', error);
+      throw error;
+    }
+  }
+};
+
+// Chat Sessions API
+export const chatSessionsApi = {
+  createSession: async (sessionData: ChatSessionCreate): Promise<ChatSessionResponse> => {
+    try {
+      const response = await axios.post<ChatSessionResponse>(
+        `${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'}/chat-sessions`,
+        sessionData,
+        {
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${typeof window !== 'undefined' ? localStorage.getItem('auth_token') : null}`
+          }
+        }
+      );
+      return response.data;
+    } catch (error) {
+      console.error('Error creating chat session:', error);
+      throw error;
+    }
+  },
+
+  getSessions: async (limit: number = 50, offset: number = 0): Promise<ChatSessionsListResponse> => {
+    try {
+      const response = await axios.get<ChatSessionsListResponse>(
+        `${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'}/chat-sessions`,
+        {
+          params: { limit, offset },
+          headers: {
+            'Authorization': `Bearer ${typeof window !== 'undefined' ? localStorage.getItem('auth_token') : null}`
+          }
+        }
+      );
+      return response.data;
+    } catch (error) {
+      console.error('Error fetching chat sessions:', error);
+      throw error;
+    }
+  },
+
+  getSession: async (sessionId: string): Promise<ChatSessionWithMessages> => {
+    try {
+      const response = await axios.get<ChatSessionWithMessages>(
+        `${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'}/chat-sessions/${sessionId}`,
+        {
+          headers: {
+            'Authorization': `Bearer ${typeof window !== 'undefined' ? localStorage.getItem('auth_token') : null}`
+          }
+        }
+      );
+      return response.data;
+    } catch (error) {
+      console.error('Error fetching chat session:', error);
+      throw error;
+    }
+  },
+
+  updateSession: async (sessionId: string, updates: ChatSessionUpdate): Promise<ChatSessionResponse> => {
+    try {
+      const response = await axios.put<ChatSessionResponse>(
+        `${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'}/chat-sessions/${sessionId}`,
+        updates,
+        {
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${typeof window !== 'undefined' ? localStorage.getItem('auth_token') : null}`
+          }
+        }
+      );
+      return response.data;
+    } catch (error) {
+      console.error('Error updating chat session:', error);
+      throw error;
+    }
+  },
+
+  deleteSession: async (sessionId: string): Promise<{ status: string; message: string }> => {
+    try {
+      const response = await axios.delete<{ status: string; message: string }>(
+        `${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'}/chat-sessions/${sessionId}`,
+        {
+          headers: {
+            'Authorization': `Bearer ${typeof window !== 'undefined' ? localStorage.getItem('auth_token') : null}`
+          }
+        }
+      );
+      return response.data;
+    } catch (error) {
+      console.error('Error deleting chat session:', error);
+      throw error;
+    }
+  }
+};
+
 // Prompt Optimizer API
 export const promptOptimizerApi = {
-  // Create a new prompt
   createPrompt: async (promptData: PromptCreate): Promise<ApiPromptResponse<Prompt>> => {
     try {
       const response = await api.post('/prompt-optimizer/prompts', promptData);
@@ -456,7 +572,6 @@ export const promptOptimizerApi = {
     }
   },
 
-  // Get all prompts for the user
   getPrompts: async (params: PromptListParams = {}): Promise<ApiPromptResponse<Prompt[]>> => {
     try {
       const response = await api.get('/prompt-optimizer/prompts', { params });
@@ -467,7 +582,6 @@ export const promptOptimizerApi = {
     }
   },
 
-  // Get a specific prompt by ID
   getPrompt: async (promptId: string): Promise<ApiPromptResponse<Prompt>> => {
     try {
       const response = await api.get(`/prompt-optimizer/prompts/${promptId}`);
@@ -478,7 +592,6 @@ export const promptOptimizerApi = {
     }
   },
 
-  // Update an existing prompt
   updatePrompt: async (promptId: string, updates: PromptUpdate): Promise<ApiPromptResponse<Prompt>> => {
     try {
       const response = await api.put(`/prompt-optimizer/prompts/${promptId}`, updates);
@@ -489,7 +602,6 @@ export const promptOptimizerApi = {
     }
   },
 
-  // Delete a prompt
   deletePrompt: async (promptId: string): Promise<ApiPromptResponse> => {
     try {
       const response = await api.delete(`/prompt-optimizer/prompts/${promptId}`);
@@ -500,7 +612,6 @@ export const promptOptimizerApi = {
     }
   },
 
-  // Optimize a prompt using AI
   optimizePrompt: async (promptId: string): Promise<ApiPromptResponse<OptimizationAnalysis>> => {
     try {
       const response = await api.post(`/prompt-optimizer/prompts/${promptId}/optimize`);
@@ -511,11 +622,10 @@ export const promptOptimizerApi = {
     }
   },
 
-  // Quick analysis without saving
   analyzePrompt: async (promptText: string): Promise<ApiPromptResponse<OptimizationAnalysis>> => {
     try {
       const response = await api.post('/prompt-optimizer/analyze', {
-        prompt_text: promptText  // Send in body, not query params
+        prompt_text: promptText
       });
       return response.data;
     } catch (error) {
@@ -524,7 +634,6 @@ export const promptOptimizerApi = {
     }
   },
 
-  // Get version history for a prompt
   getPromptVersions: async (promptId: string): Promise<ApiPromptResponse<PromptVersion[]>> => {
     try {
       const response = await api.get(`/prompt-optimizer/prompts/${promptId}/versions`);
@@ -535,7 +644,6 @@ export const promptOptimizerApi = {
     }
   },
 
-  // Export optimization results
   exportOptimization: async (promptId: string, format: 'json' | 'txt' = 'json'): Promise<boolean> => {
     try {
       const promptResponse = await promptOptimizerApi.getPrompt(promptId);
@@ -555,7 +663,6 @@ export const promptOptimizerApi = {
         optimization_results: prompt.optimization_results || []
       };
 
-      // Create and download file
       const dataStr = format === 'json'
         ? JSON.stringify(exportData, null, 2)
         : `Title: ${prompt.title}\n\nOriginal Prompt:\n${prompt.original_prompt}\n\nOptimized Prompt:\n${prompt.optimized_prompt}`;
@@ -578,14 +685,8 @@ export const promptOptimizerApi = {
   }
 };
 
-// Add this to your frontend api.ts to test the integration
-
-// ADD THESE FUNCTIONS TO YOUR EXISTING src/services/api.ts FILE
-// Scroll to the bottom and add this section:
-
-// Template Library API Functions
+// Template Library API
 export const templateLibraryApi = {
-  // Health check
   healthCheck: async () => {
     try {
       const response = await api.get('/template-library/health');
@@ -596,12 +697,10 @@ export const templateLibraryApi = {
     }
   },
 
-  // Get all templates with filtering
   getTemplates: async (params: any = {}) => {
     try {
       const searchParams = new URLSearchParams();
 
-      // Add parameters if they exist
       if (params.limit) searchParams.append('limit', params.limit.toString());
       if (params.offset) searchParams.append('offset', params.offset.toString());
       if (params.category && params.category !== 'All') searchParams.append('category', params.category);
@@ -618,7 +717,6 @@ export const templateLibraryApi = {
     }
   },
 
-  // Get featured templates for homepage
   getFeaturedTemplates: async (limit: number = 8) => {
     try {
       const response = await api.get(`/template-library/templates/featured?limit=${limit}`);
@@ -629,7 +727,6 @@ export const templateLibraryApi = {
     }
   },
 
-  // Get single template by ID
   getTemplate: async (templateId: string) => {
     try {
       const response = await api.get(`/template-library/templates/${templateId}`);
@@ -640,7 +737,6 @@ export const templateLibraryApi = {
     }
   },
 
-  // Create new template
   createTemplate: async (templateData: {
     title: string;
     description?: string;
@@ -659,7 +755,6 @@ export const templateLibraryApi = {
     }
   },
 
-  // Update existing template
   updateTemplate: async (templateId: string, templateData: any) => {
     try {
       const response = await api.put(`/template-library/templates/${templateId}`, templateData);
@@ -670,7 +765,6 @@ export const templateLibraryApi = {
     }
   },
 
-  // Use template (logs usage and returns template data)
   useTemplate: async (templateId: string) => {
     try {
       const response = await api.post(`/template-library/templates/${templateId}/use`);
@@ -681,7 +775,6 @@ export const templateLibraryApi = {
     }
   },
 
-  // Get template categories
   getCategories: async () => {
     try {
       const response = await api.get('/template-library/categories');
@@ -692,7 +785,6 @@ export const templateLibraryApi = {
     }
   },
 
-  // Get dashboard statistics
   getDashboardStats: async () => {
     try {
       const response = await api.get('/template-library/dashboard');
@@ -703,7 +795,6 @@ export const templateLibraryApi = {
     }
   },
 
-  // Search templates with specific query
   searchTemplates: async (searchTerm: string, filters: any = {}) => {
     try {
       const params = {
@@ -717,7 +808,6 @@ export const templateLibraryApi = {
     }
   },
 
-  // Get templates by category
   getTemplatesByCategory: async (category: string, limit: number = 20) => {
     try {
       const params = {
@@ -732,59 +822,8 @@ export const templateLibraryApi = {
   }
 };
 
-// AI Risk Assessment Types
-export interface AISystem {
-  id: string;
-  user_id: string;
-  name: string;
-  description?: string;
-  development_stage?: string;
-  status: string;
-  created_at: string;
-  updated_at: string;
-}
-
-export interface Assessment {
-  id: string;
-  ai_system_id: string;
-  current_step: number;
-  completed_steps: number;
-  step_1_completed: boolean;
-  step_2_completed: boolean;
-  step_3_completed: boolean;
-  system_name?: string;
-  system_description?: string;
-  development_stage?: string;
-  primary_purpose?: string;
-  purpose_details?: string;
-  prohibited_practices?: any;
-  safety_component?: string;
-  impact_level?: string;
-}
-
-export interface ClassificationResult {
-  id: string;
-  ai_system_id: string;
-  risk_level: string;
-  primary_reason: string;
-  confidence_level: string;
-  created_at: string;
-}
-
-export interface AISystemCreateRequest {
-  name: string;
-  description?: string;
-  development_stage?: string;
-}
-
-export interface AssessmentStepUpdate {
-  step: number;
-  data: Record<string, any>;
-}
-
-// AI Risk Assessment API
+// AI Risk Assessment API - UPDATED for complete 10-step wizard
 export const aiSystemsApi = {
-  // Health check
   healthCheck: async () => {
     try {
       const response = await api.get('/ai-systems/health');
@@ -795,7 +834,6 @@ export const aiSystemsApi = {
     }
   },
 
-  // Create new AI system
   createAISystem: async (systemData: AISystemCreateRequest) => {
     try {
       const response = await api.post('/ai-systems/', systemData);
@@ -809,22 +847,17 @@ export const aiSystemsApi = {
   getAISystems: async (params: { limit?: number; offset?: number } = {}) => {
     try {
       console.log('🔄 Fetching AI systems...');
-      console.log('🔄 API base URL:', process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000');
-      console.log('🔄 Request params:', params);
-
       const response = await api.get('/ai-systems/', { params });
       console.log('✅ AI systems response:', response.data);
       return response.data;
-    } catch (error: any) {  // ← Add ': any' here
+    } catch (error: any) {
       console.error('❌ Get AI systems failed:', error);
       console.error('❌ Error response:', error.response?.data);
       console.error('❌ Error status:', error.response?.status);
-      console.error('❌ Error URL:', error.config?.url);
       throw error;
     }
   },
 
-  // Get specific AI system with assessment
   getAISystem: async (systemId: string) => {
     try {
       const response = await api.get(`/ai-systems/${systemId}`);
@@ -835,7 +868,6 @@ export const aiSystemsApi = {
     }
   },
 
-  // Update assessment step
   updateAssessmentStep: async (systemId: string, stepUpdate: AssessmentStepUpdate) => {
     try {
       const response = await api.put(`/ai-systems/${systemId}/assessment`, stepUpdate);
@@ -846,7 +878,6 @@ export const aiSystemsApi = {
     }
   },
 
-  // Classify AI system
   classifyAISystem: async (systemId: string) => {
     try {
       const response = await api.post(`/ai-systems/${systemId}/classify`);
@@ -858,28 +889,23 @@ export const aiSystemsApi = {
   }
 };
 
-
-// Test function for debugging (optional - you can remove this)
+// Test function for Template Library API
 export const testTemplateLibraryAPI = async () => {
   console.log('🧪 Testing Template Library API integration...');
 
   try {
-    // Test health check
     console.log('1. Testing health check...');
     const health = await templateLibraryApi.healthCheck();
     console.log('✅ Health check:', health);
 
-    // Test get categories
     console.log('2. Testing get categories...');
     const categories = await templateLibraryApi.getCategories();
     console.log('✅ Categories:', categories);
 
-    // Test get featured templates
     console.log('3. Testing get featured templates...');
     const featured = await templateLibraryApi.getFeaturedTemplates();
     console.log('✅ Featured templates:', featured);
 
-    // Test get all templates
     console.log('4. Testing get all templates...');
     const templates = await templateLibraryApi.getTemplates({ limit: 5 });
     console.log('✅ All templates:', templates);

@@ -1,12 +1,20 @@
-// src/pages/eu_act/risk-assessment/[systemId].tsx - Refined Elegant Style
+// src/pages/eu_act/risk-assessment/[systemId].tsx - Updated with Step 5
 import { useRouter } from 'next/router';
 import React, { useEffect, useState } from 'react';
 import Layout from '../../../components/Layout/Layout';
 import { aiSystemsApi } from '../../../services/api';
+import Step10ComplianceResults from '../WizardSteps/Step10ComplianceResults';
 import Step1BasicInfo from '../WizardSteps/Step1BasicInfo';
 import Step2PurposeAnalysis from '../WizardSteps/Step2PurposeAnalysis';
 import Step3TechnicalCharacteristics from '../WizardSteps/Step3TechnicalCharacteristics';
 import Step4ProhibitedPractices from '../WizardSteps/Step4ProhibitedPractices';
+import Step5AnnexIIIAssessment from '../WizardSteps/Step5AnnexIIIAssessment';
+import Step6SafetyComponents from '../WizardSteps/Step6SafetyComponents';
+import Step7ImpactOversight from '../WizardSteps/Step7ImpactOversight';
+import Step8DataGovernance from '../WizardSteps/Step8DataGovernance';
+import Step9Transparency from '../WizardSteps/Step9Transparency';
+
+
 
 const AssessmentWizardPage: React.FC = () => {
     const router = useRouter();
@@ -175,7 +183,9 @@ const AssessmentWizardPage: React.FC = () => {
                                 initialData={assessment ? {
                                     system_name: assessment.system_name || '',
                                     system_description: assessment.system_description || '',
-                                    development_stage: assessment.development_stage || 'planning'
+                                    development_stage: assessment.development_stage || 'planning',
+                                    system_version: assessment.system_version || '',
+                                    planned_deployment_timeline: assessment.planned_deployment_timeline || ''
                                 } : undefined}
                                 onNext={(data) => {
                                     console.log('Step 1 completed with data:', data);
@@ -192,8 +202,12 @@ const AssessmentWizardPage: React.FC = () => {
                             <Step2PurposeAnalysis
                                 systemId={systemId as string}
                                 initialData={assessment ? {
+                                    business_domain: assessment.business_domain || '',
                                     primary_purpose: assessment.primary_purpose || '',
-                                    purpose_details: assessment.purpose_details || ''
+                                    target_users: assessment.target_users,
+                                    typical_use_case: assessment.use_case_description || '',
+                                    deployment_location: assessment.geographic_scope,
+                                    automated_decisions_legal_effects: assessment.automated_decisions_legal_effects || ''
                                 } : undefined}
                                 onNext={(data) => {
                                     console.log('Step 2 completed with data:', data);
@@ -212,7 +226,7 @@ const AssessmentWizardPage: React.FC = () => {
                                 initialData={assessment ? {
                                     ai_model_type: assessment.ai_model_type || '',
                                     model_architecture: assessment.model_architecture || '',
-                                    data_processing_type: assessment.data_processing_type || '',
+                                    data_processing: assessment.data_processing_type || '',
                                     input_data_types: assessment.input_data_types,
                                     output_types: assessment.output_types,
                                     decision_autonomy: assessment.decision_autonomy || ''
@@ -232,15 +246,10 @@ const AssessmentWizardPage: React.FC = () => {
                             <Step4ProhibitedPractices
                                 systemId={systemId as string}
                                 initialData={assessment ? {
-                                    manipulation_techniques: assessment.manipulation_techniques || false,
-                                    manipulation_details: assessment.manipulation_details || '',
-                                    vulnerability_exploitation: assessment.vulnerability_exploitation || false,
-                                    vulnerability_details: assessment.vulnerability_details || '',
-                                    social_scoring: assessment.social_scoring || false,
-                                    social_scoring_details: assessment.social_scoring_details || '',
-                                    biometric_identification: assessment.biometric_identification || false,
-                                    biometric_details: assessment.biometric_details || '',
-                                    prohibited_practices: assessment.prohibited_practices
+                                    subliminal_manipulation: assessment.subliminal_manipulation || '',
+                                    vulnerable_groups_exploitation: assessment.vulnerable_groups_exploitation || '',
+                                    social_scoring_public: assessment.social_scoring_public || '',
+                                    realtime_biometric_public: assessment.realtime_biometric_public || ''
                                 } : undefined}
                                 onNext={(data) => {
                                     console.log('Step 4 completed with data:', data);
@@ -252,60 +261,147 @@ const AssessmentWizardPage: React.FC = () => {
                             />
                         )}
 
-                        {/* Steps 5-10: Placeholder for remaining steps */}
-                        {currentStep >= 5 && currentStep <= 10 && (
-                            <div style={{ textAlign: 'center', padding: '40px 20px', color: '#718096' }}>
-                                <div style={{ fontSize: '32px', marginBottom: '16px' }}>
-                                    {getStepIcon(currentStep)}
-                                </div>
-                                <h3 style={{ fontSize: '18px', marginBottom: '8px', color: '#2d3748', fontWeight: '600' }}>
-                                    Step {currentStep}: {getStepTitle(currentStep)}
-                                </h3>
-                                <p style={{ fontSize: '14px', marginBottom: '20px', maxWidth: '400px', margin: '0 auto 20px' }}>
-                                    {getStepDescription(currentStep)}
-                                </p>
-                                <p style={{ fontSize: '12px', color: '#a0aec0', marginBottom: '24px' }}>
-                                    This step component will be implemented next.
-                                </p>
-
-                                {/* Navigation buttons */}
-                                <div style={{ display: 'flex', gap: '8px', justifyContent: 'center' }}>
-                                    <button
-                                        onClick={() => setCurrentStep(currentStep - 1)}
-                                        style={{
-                                            padding: '8px 16px',
-                                            backgroundColor: '#edf2f7',
-                                            border: '1px solid #e2e8f0',
-                                            borderRadius: '6px',
-                                            color: '#4a5568',
-                                            fontSize: '13px',
-                                            fontWeight: '500',
-                                            cursor: 'pointer'
-                                        }}
-                                    >
-                                        Previous
-                                    </button>
-
-                                    {currentStep < 10 && (
-                                        <button
-                                            onClick={() => setCurrentStep(currentStep + 1)}
-                                            style={{
-                                                padding: '8px 20px',
-                                                backgroundColor: '#4299e1',
-                                                border: 'none',
-                                                borderRadius: '6px',
-                                                color: 'white',
-                                                fontSize: '13px',
-                                                fontWeight: '500',
-                                                cursor: 'pointer'
-                                            }}
-                                        >
-                                            Continue Assessment
-                                        </button>
-                                    )}
-                                </div>
-                            </div>
+                        {/* Step 5: Annex III High-Risk Assessment */}
+                        {currentStep === 5 && (
+                            <Step5AnnexIIIAssessment
+                                systemId={systemId as string}
+                                initialData={assessment ? {
+                                    biometric_categorization: assessment.biometric_categorization ? 'yes' : assessment.biometric_categorization === false ? 'no' : '',
+                                    critical_infrastructure: assessment.critical_infrastructure ? 'yes' : assessment.critical_infrastructure === false ? 'no' : '',
+                                    education_vocational: assessment.education_training ? 'yes' : assessment.education_training === false ? 'no' : '',
+                                    employment_hr: assessment.employment_recruitment ? 'yes' : assessment.employment_recruitment === false ? 'no' : '',
+                                    essential_services: assessment.essential_services ? 'yes' : assessment.essential_services === false ? 'no' : '',
+                                    law_enforcement: assessment.law_enforcement ? 'yes' : assessment.law_enforcement === false ? 'no' : '',
+                                    migration_asylum: assessment.migration_asylum ? 'yes' : assessment.migration_asylum === false ? 'no' : '',
+                                    justice_democracy: assessment.justice_democracy ? 'yes' : assessment.justice_democracy === false ? 'no' : '',
+                                    profiling_individuals: assessment.involves_profiling ? 'yes' : assessment.involves_profiling === false ? 'no' : '',
+                                    preparatory_only: assessment.preparatory_task_only ? 'yes' : assessment.preparatory_task_only === false ? 'no' : ''
+                                } : undefined}
+                                onNext={(data) => {
+                                    console.log('Step 5 completed with data:', data);
+                                    setCurrentStep(6);
+                                    loadSystemData(systemId as string);
+                                }}
+                                onBack={() => setCurrentStep(4)}
+                                loading={loading}
+                            />
                         )}
+
+                        {/* Step 6: Article 6 Safety Components */}
+                        {currentStep === 6 && (
+                            <Step6SafetyComponents
+                                systemId={systemId as string}
+                                initialData={assessment ? {
+                                    ai_regulated_product: assessment.safety_component || '',
+                                    safety_sector: assessment.safety_component_sector || '',
+                                    third_party_conformity: assessment.third_party_conformity ? 'yes' : assessment.third_party_conformity === false ? 'no' : '',
+                                    ce_marking_required: assessment.ce_marking_required ? 'yes' : assessment.ce_marking_required === false ? 'no' : '',
+                                    applicable_legislation: assessment.eu_legislation_applicable
+                                } : undefined}
+                                onNext={(data) => {
+                                    console.log('Step 6 completed with data:', data);
+                                    setCurrentStep(7);
+                                    loadSystemData(systemId as string);
+                                }}
+                                onBack={() => setCurrentStep(5)}
+                                loading={loading}
+                            />
+                        )}
+
+                        {/* Step 7: Impact and Human Oversight */}
+                        {currentStep === 7 && (
+                            <Step7ImpactOversight
+                                systemId={systemId as string}
+                                initialData={assessment ? {
+                                    affected_individuals_count: assessment.affected_individuals_count || '',
+                                    vulnerable_groups_affected: assessment.vulnerable_groups_affected,
+                                    vulnerable_groups_details: assessment.vulnerable_groups_details || '',
+                                    impact_level: assessment.impact_level || '',
+                                    impact_details: assessment.impact_details || '',
+                                    human_oversight_level: assessment.human_oversight_level || '',
+                                    oversight_mechanisms: assessment.oversight_mechanisms || '',
+                                    override_capabilities: assessment.override_capabilities,
+                                    human_review_process: assessment.human_review_process || ''
+                                } : undefined}
+                                onNext={(data) => {
+                                    console.log('Step 7 completed with data:', data);
+                                    setCurrentStep(8);
+                                    loadSystemData(systemId as string);
+                                }}
+                                onBack={() => setCurrentStep(6)}
+                                loading={loading}
+                            />
+                        )}
+
+                        // 2. Replace the placeholder Step 8 section with:
+                        {/* Step 8: Data Governance */}
+                        {currentStep === 8 && (
+                            <Step8DataGovernance
+                                systemId={systemId as string}
+                                initialData={assessment ? {
+                                    data_sources: assessment.data_sources,
+                                    personal_data_processing: assessment.personal_data_processing,
+                                    data_quality_measures: assessment.data_quality_measures || '',
+                                    bias_mitigation_measures: assessment.bias_mitigation_measures || '',
+                                    data_governance_framework: assessment.data_governance_framework || '',
+                                    gdpr_compliance_status: assessment.gdpr_compliance_status || ''
+                                } : undefined}
+                                onNext={(data) => {
+                                    console.log('Step 8 completed with data:', data);
+                                    setCurrentStep(9);
+                                    loadSystemData(systemId as string);
+                                }}
+                                onBack={() => setCurrentStep(7)}
+                                loading={loading}
+                            />
+                        )}
+
+                        // 2. Replace the placeholder Step 9 section with:
+                        {/* Step 9: Transparency and Explainability */}
+                        {currentStep === 9 && (
+                            <Step9Transparency
+                                systemId={systemId as string}
+                                initialData={assessment ? {
+                                    user_notification_mechanism: assessment.user_notification_mechanism || '',
+                                    transparency_level: assessment.transparency_level || '',
+                                    decision_explanation_capability: assessment.decision_explanation_capability,
+                                    explainability_features: assessment.explainability_features || '',
+                                    user_documentation: [], // Fresh form data
+                                    transparency_adapted_to_risk: '' // Fresh form data
+                                } : undefined}
+                                onNext={(data) => {
+                                    console.log('Step 9 completed with data:', data);
+                                    setCurrentStep(10);
+                                    loadSystemData(systemId as string);
+                                }}
+                                onBack={() => setCurrentStep(8)}
+                                loading={loading}
+                            />
+                        )}
+
+                        // 2. Replace the placeholder Step 10 section with:
+                        {/* Step 10: Compliance Readiness and Results */}
+                        {currentStep === 10 && (
+                            <Step10ComplianceResults
+                                systemId={systemId as string}
+                                initialData={assessment ? {
+                                    existing_governance_framework: assessment.existing_governance_framework,
+                                    governance_details: assessment.governance_details || '',
+                                    documentation_status: assessment.documentation_status || '',
+                                    risk_management_system: assessment.risk_management_system,
+                                    conformity_assessment_ready: assessment.conformity_assessment_ready,
+                                    ai_compliance_officer: '' // This field might not exist in your current schema
+                                } : undefined}
+                                onNext={(data) => {
+                                    console.log('Step 10 completed with data:', data);
+                                    // Assessment is complete - redirect to results or dashboard
+                                    router.push('/eu_act/risk-assessment');
+                                }}
+                                onBack={() => setCurrentStep(9)}
+                                loading={loading}
+                            />
+                        )}
+
                     </div>
                 </div>
             </div>
